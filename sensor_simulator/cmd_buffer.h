@@ -12,32 +12,16 @@ extern "C"{
 
 
 typedef enum { 
-    COMMAND_START_BYTE          = 0xFF,
-
-    // Commands
     NO_COMMAND                  = 0x00,
     GET_ALL_SENSOR_VALUES       = 0x01,
     GET_SENSOR_VALUE            = 0x02,
-    CONTROLLER_PING             = 0x03
-} SensorCommandValue;
+    GET_ALL_SENSOR_DESCRIPTIONS = 0x03,
+    GET_SENSOR_DESCRIPTION      = 0x04
+} SensorCommandIdentifier;
 
-typedef enum {
-    RESPONSE_START_BYTE         = 0xFF,
-    SENSOR_DATA_PACKET_START    = 0xFE,
-
-    SENSOR_DATA                 = 0x01,
-    SENSOR_DATA_ERROR           = 0x03,
-    CONTROLLER_PONG             = 0xEE
-} SensorDataResponseValue;
-
-typedef enum {
-    NO_SENSOR_DATA              = 0x01,
-    VALID_SENSOR_DATA           = 0x02
-} SensorDataResponseStatus;
-
-typedef enum {
-    ERROR_INVALID_SENSOR_ID     = 0x01
-} SensorResponseError;
+typedef enum { 
+    COMMAND_START_BYTE          = 0xFF,
+} CommandByte;
 
 typedef enum {
     AWAITING_DATA               = 0x00,
@@ -49,7 +33,7 @@ typedef enum {
 
 typedef struct {
     CommandBufferState mCommandBufferState;
-    SensorCommandValue mCurrentCommand;
+    SensorCommandIdentifier mCurrentCommand;
     uint8_t mCommandBuffer[COMMAND_LENGTH];
     uint8_t mCurrentBufferPos;
 } CommandBuffer;
@@ -57,7 +41,7 @@ typedef struct {
 
 // Command buffer functions
 void init_cmd_buffer(CommandBuffer *cb);
-void handle_incoming_byte(CommandBuffer *cb, uint8_t *in);
+void handle_incoming_byte(CommandBuffer *cb, char in);
 void process_cmd_buffer(CommandBuffer *cb);
 
 

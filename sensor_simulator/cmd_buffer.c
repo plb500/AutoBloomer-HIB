@@ -6,13 +6,14 @@ void init_cmd_buffer(CommandBuffer *cb) {
     cb->mCurrentCommand = NO_COMMAND;
 }
 
-void handle_incoming_byte(CommandBuffer *cb, uint8_t *in) {
-    if(in == COMMAND_START_BYTE) {
+void handle_incoming_byte(CommandBuffer *cb, char in) {
+    uint8_t uin = (uint8_t) in;
+    if(uin == COMMAND_START_BYTE) {
         init_cmd_buffer(cb);
         return;
     }
     
-    cb->mCommandBuffer[cb->mCurrentBufferPos++] = in;
+    cb->mCommandBuffer[cb->mCurrentBufferPos++] = uin;
 
     if (cb->mCurrentBufferPos != COMMAND_LENGTH) {
         cb->mCommandBufferState = PROCESSING_COMMAND_DATA;
@@ -34,5 +35,5 @@ void handle_incoming_byte(CommandBuffer *cb, uint8_t *in) {
 
     // Complete, valid command. Process
     cb->mCommandBufferState = HAS_COMPLETE_COMMAND;
-    cb->mCurrentCommand = (SensorCommandValue) cb->mCommandBuffer[0];
+    cb->mCurrentCommand = (SensorCommandIdentifier) cb->mCommandBuffer[0];
 }
