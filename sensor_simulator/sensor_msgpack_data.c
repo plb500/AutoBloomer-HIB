@@ -29,6 +29,31 @@ const char *SENSOR_DATA_STATUS_KEY = "sensor_status";
 const char *SENSOR_DATA_READINGS_KEY = "sensor_readings";
 
 
+PackResponse pack_controller_ready_packet(char* outBuf, size_t outBufSize) {
+    // Initialize writer
+    PackResponse response;
+    mpack_writer_t writer;
+    mpack_writer_init(&writer, outBuf, outBufSize);
+
+    // Write out packet data
+    mpack_start_map(&writer, 1);
+
+    // Pack packet ID
+    mpack_write_cstr(&writer, PACKET_ID_KEY);
+    mpack_write_u8(&writer, CONTROLLER_READY_PACKET);
+
+    // Finish building the map
+    mpack_finish_map(&writer);
+
+    // Get the amount of bytes used
+    response.mBytesUsed = mpack_writer_buffer_used(&writer);
+
+    // Finish writing the data
+    response.mErrorCode = mpack_writer_destroy(&writer);
+
+    return response;
+}
+
 PackResponse pack_header_data(HeaderPacket headerPacket, char* outBuf, size_t outBufSize) {
     // Initialize writer
     PackResponse response;

@@ -15,6 +15,11 @@ extern "C"{
  *              +---------------------------+
  *              
  *              
+ *      // "Controller ready" packet
+ *      {
+ *          "packet_id" : 254,                                  <- Packet type identifier. See "PacketIdentifier" below for values. Unsigned 8-bit
+ *      }
+ *              
  *      // Header packet
  *      {
  *          "packet_id" : 0,                                    <- Packet type identifier. See "PacketIdentifier" below for values. Unsigned 8-bit
@@ -69,6 +74,7 @@ typedef enum {
     COMMAND_RESPONSE_PACKET     = 0x00,
     SENSOR_DATA_PACKET          = 0x01,
     SENSOR_DESCRIPTION_PACKET   = 0x02,
+    CONTROLLER_READY_PACKET     = 0xFE,
     TERMINATOR_PACKET           = 0xFF
 } PacketIdentifier;
 
@@ -151,6 +157,7 @@ typedef struct {
 
 
 // Pack the supplied sensor data into the supplied buffer
+PackResponse pack_controller_ready_packet(char* outBuf, size_t outBufSize);
 PackResponse pack_header_data(HeaderPacket headerPacket, char* outBuf, size_t outBufSize);
 PackResponse pack_terminator_packet(char* outBuf, size_t outBufSize);
 PackResponse pack_sensor_data(SensorData *sensorData, char* outBuf, size_t outBufSize);

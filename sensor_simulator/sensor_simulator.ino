@@ -8,6 +8,23 @@ CommandBuffer cmdBuffer;
 char mpackBuffer[MPACK_OUT_BUFFER_SIZE];
 
 
+void send_controller_ready() {
+    PackResponse response;
+
+    // Pack and send the header data
+    response = pack_controller_ready_packet(mpackBuffer, MPACK_OUT_BUFFER_SIZE);
+    if(!response.mErrorCode) {
+        Serial.write(mpackBuffer, response.mBytesUsed);
+    }
+
+    // Pack and send terminator packet
+    response = pack_terminator_packet(mpackBuffer, MPACK_OUT_BUFFER_SIZE);
+    if(!response.mErrorCode) {
+        Serial.write(mpackBuffer, response.mBytesUsed);
+    }
+}
+
+
 void handle_send_all_sensor_descriptions_command() {
     PackResponse response;
     HeaderPacket headerPacket = {
@@ -165,6 +182,9 @@ void setup() {
 
     // Setup serial
     Serial.begin(115200);
+
+    // Send ready signal
+    send_controller_ready();
 }
 
 void loop() {
