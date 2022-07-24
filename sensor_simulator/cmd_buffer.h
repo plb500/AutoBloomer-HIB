@@ -2,6 +2,7 @@
 #define __CMD_BUFFFER_H__
 
 #include <Arduino.h>
+#include "sensor_msgpack_data.h"
 
 #define COMMAND_LENGTH (4)
 
@@ -10,14 +11,6 @@
 extern "C"{
 #endif
 
-
-typedef enum { 
-    NO_COMMAND                  = 0x00,
-    GET_ALL_SENSOR_VALUES       = 0x01,
-    GET_SENSOR_VALUE            = 0x02,
-    GET_ALL_SENSOR_DESCRIPTIONS = 0x03,
-    GET_SENSOR_DESCRIPTION      = 0x04
-} SensorCommandIdentifier;
 
 typedef enum { 
     COMMAND_START_BYTE          = 0xFF,

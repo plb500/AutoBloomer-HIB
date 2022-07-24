@@ -10,9 +10,9 @@ extern "C"{
 
 
 /**
- *              +---------------------------+
- *              | MSGPACK PACKET STRUCTURES |
- *              +---------------------------+
+ *              /------------------------------------\
+ *              | OUTGOING MSGPACK PACKET STRUCTURES |
+ *              \------------------------------------/
  *              
  *              
  *      // "Controller ready" packet
@@ -26,38 +26,31 @@ extern "C"{
  *          "response_code" : 0,                                <- Command response code. See "CommandResponseCode" below for values. Unsigned 8-bit
  *          "sensor_data_count" : 1                             <- Number of sensor data packets to follow. Unsigned 8-bit
  *      }
- * 
+ *      
+ *      // Sensor reading description object
+ *      {
+ *          "name" : "Reading name",
+ *          "type" : 0,
+ *          "min_value" : 0.0,
+ *          "max_value" : 25.5,
+ *      }
+ *      
+ *      // Sensor reading object
+ *      {
+ *          "description" : <Sensor reading description object> 
+ *          "value" : 12.3      
+ *      }
+ *      
  *      // Sensor data packet
  *      {
  *          "packet_id" : 1,                                    <- Packet type identifier. Set to SENSOR_DATA for this packet
  *          "sensor_id" : 0,                                    <- Sensor identifier. Unique, unsigned 8-bit
+ *          "name" : "DHT22 Temp/RH sensor"                     <- Sensor name
  *          "sensor_status" : 0,                                <- Sensor status, see "SensorStatus" enum below for values. Unsigned 8-bit
  *          "sensor_readings" : [                               <- Individual sensor readings array
- *              "value" : 126.5                                 <- Actual sensor readings, can be float, bool (unsigned 8-bit int) or 16-bit int. 
- *              "value" : 12
- *          ]
- *      }
- *      
- *      // Sensor description packet
- *      {
- *          "packet_id" : 2,                                    <- Packet type identifier. Set to SENSOR_DESCRIPTION_PACKET for this packet
- *          "sensor_id" : 0,                                    <- Sensor identifier. Unique, unsigned 8-bit
- *          "name" : "Sensor Description",                      <- Sensor description/name
- *          "reading_details" : [                               <- Individual sensor reading descriptions array
- *              {
- *                  "name" : "First sensor reading",            <- Name of sensor
- *                  "type" : "float",                           <- Type of sensor value, see "ReadingType" enum below for values. Unsigned 8-bit
- *                  "min_value" : 0.0,                          <- Minimum sensor value
- *                  "max_value" : 25.5                          <- Maximum sensor value
- *                  }
- *              },
- *              {                                               <- Repeats for each individual sensor reading...
- *                  "name" : "Second sensor reading",
- *                  "type" : "integer",
- *                  "min_value" : 0,
- *                  "max_value" : 15
- *                  }
- *              }
+ *              <Sensor Reading object>,                        <- See "Sensor reading object" above
+ *              <Sensor Reading object>
+ *              ....
  *          ]
  *      }
  *      
@@ -68,22 +61,31 @@ extern "C"{
  * 
  */
 
-
-// Type of packet we are sending
-typedef enum {
-    COMMAND_RESPONSE_PACKET     = 0x00,
-    SENSOR_DATA_PACKET          = 0x01,
-    SENSOR_DESCRIPTION_PACKET   = 0x02,
-    CONTROLLER_READY_PACKET     = 0xFE,
-    TERMINATOR_PACKET           = 0xFF
-} PacketIdentifier;
+// Sensor commands
+typedef enum { 
+    NO_COMMAND                  = 0x00,
+    GET_ALL_SENSOR_VALUES       = 0x01,
+    GET_SENSOR_VALUE            = 0x02,
+} SensorCommandIdentifier;
 
 
 // Command response codes 
 typedef enum {
     COMMAND_OK                  = 0x00,
-    SENSOR_NOT_FOUND            = 0x01
+    SENSOR_NOT_FOUND            = 0x01,
+
+    CONTROLLER_READY            = 0xFF
 } CommandResponseCode;
+
+
+// Type of packet we are sending
+typedef enum {
+    HEADER_PACKET               = 0x00,
+    SENSOR_DATA_PACKET          = 0x01,
+    SENSOR_DESCRIPTION_PACKET   = 0x02,
+    CONTROLLER_READY_PACKET     = 0xFE,
+    TERMINATOR_PACKET           = 0xFF
+} PacketIdentifier;
 
 
 // Describes the current sensor stats
@@ -110,33 +112,25 @@ typedef union {
 } ReadingValue;
 
 
-typedef struct {
-    ReadingType mType;
-    ReadingValue mValue;    
-} SensorReading;
-
-
 // Description of the sensor reading output (metadata - not an actual reading)
 typedef struct {
     const char *mReadingName;               // Name of reading
     ReadingType mType;                      // The type of reading this sensor provides (i.e. int, float)
     ReadingValue mMinValue;                 // Minimum value in the range of readings for this sensor
     ReadingValue mMaxValue;                 // Maximum value in the range of readings for this sensor
-} ReadingDetails;
+} SensorReadingDescription;
 
 
-// 
+// Container for an individual reading value. Also contains a description of the reading
+typedef struct {
+    const SensorReadingDescription* const mDescription;
+    ReadingValue mValue;    
+} SensorReading;
+
+
 typedef struct {
     uint8_t mSensorID;                      // Unique sensor identification value
-    const char *mSensorName;                // Sensor/description name
-    int mNumReadings;                       // How many individual reading types this sensor provides (i.e. size of below array)
-    ReadingDetails **mReadingDetails;      // Details on each individual sensor reading
-} SensorDescription;
-
-
-// Data returned from  single piece of hardware which contains one or more individual sensors
-typedef struct {
-    uint8_t mSensorID;                      // Unique sensor identification value
+    const char *mSensorName;                // Sensor name/description
     SensorStatus mStatus;                   // Current status of sensor
     int mNumReadings;                       // How many individual reading types this sensor provides (i.e. size of below array)
     SensorReading *mSensorReadings;         // Each individual sensor reading
@@ -144,8 +138,8 @@ typedef struct {
 
 
 typedef struct {
+    SensorCommandIdentifier mCommandID;     // The command we are responding to
     CommandResponseCode mResponseCode;      // The response code for the issued command
-    uint8_t mSensorDataCount;               // How many sensor data packets will follow
 } HeaderPacket;
 
 
@@ -156,12 +150,17 @@ typedef struct {
 } PackResponse;
 
 
-// Pack the supplied sensor data into the supplied buffer
+// Packs a response indicating sensor controller is now ready for comms
 PackResponse pack_controller_ready_packet(char* outBuf, size_t outBufSize);
+
+// Packs the header for a response to an issued command
 PackResponse pack_header_data(HeaderPacket headerPacket, char* outBuf, size_t outBufSize);
-PackResponse pack_terminator_packet(char* outBuf, size_t outBufSize);
-PackResponse pack_sensor_data(SensorData *sensorData, char* outBuf, size_t outBufSize);
-PackResponse pack_sensor_description(SensorDescription *sensorDescription, char* outBuf, size_t outBufSize);
+
+// Packs the packet which signifies and end of response
+PackResponse pack_terminator_packet(uint8_t terminatorCode, char* outBuf, size_t outBufSize);
+
+// Packs a data packet for a single sensor
+PackResponse pack_sensor_data(const SensorData * const sensorData, char* outBuf, size_t outBufSize);
 
 
 #ifdef __cplusplus

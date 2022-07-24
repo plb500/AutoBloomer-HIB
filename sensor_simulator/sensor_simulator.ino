@@ -18,70 +18,7 @@ void send_controller_ready() {
     }
 
     // Pack and send terminator packet
-    response = pack_terminator_packet(mpackBuffer, MPACK_OUT_BUFFER_SIZE);
-    if(!response.mErrorCode) {
-        Serial.write(mpackBuffer, response.mBytesUsed);
-    }
-}
-
-
-void handle_send_all_sensor_descriptions_command() {
-    PackResponse response;
-    HeaderPacket headerPacket = {
-        COMMAND_OK,
-        NUM_FAKE_SENSORS
-    };
-
-    // Pack and send the header data
-    response = pack_header_data(headerPacket, mpackBuffer, MPACK_OUT_BUFFER_SIZE);
-    if(!response.mErrorCode) {
-        Serial.write(mpackBuffer, response.mBytesUsed);
-    }
-
-    // Pack and send sensor description
-    for(int i = 0; i < NUM_FAKE_SENSORS; ++i) {
-        response = pack_sensor_description(FAKE_SENSOR_DESCRIPTIONS[i], mpackBuffer, MPACK_OUT_BUFFER_SIZE);
-        if(!response.mErrorCode) {
-            Serial.write(mpackBuffer, response.mBytesUsed);
-        }
-    }
-
-    // Pack and send terminator packet
-    response = pack_terminator_packet(mpackBuffer, MPACK_OUT_BUFFER_SIZE);
-    if(!response.mErrorCode) {
-        Serial.write(mpackBuffer, response.mBytesUsed);
-    }
-}
-
-void handle_send_sensor_description_command(uint8_t sensorID) {
-    PackResponse response;
-    HeaderPacket headerPacket;
-
-    // Setup the header
-    if(sensorID < NUM_FAKE_SENSORS) {
-        headerPacket.mResponseCode = COMMAND_OK;
-        headerPacket.mSensorDataCount = 1;        
-    } else {
-        headerPacket.mResponseCode = SENSOR_NOT_FOUND;
-        headerPacket.mSensorDataCount = 0;
-    }
-    
-    // Pack and send the header data
-    response = pack_header_data(headerPacket, mpackBuffer, MPACK_OUT_BUFFER_SIZE);
-    if(!response.mErrorCode) {
-        Serial.write(mpackBuffer, response.mBytesUsed);
-    }
-
-    // Pack and send sensor description
-    if(sensorID < NUM_FAKE_SENSORS) {
-        response = pack_sensor_description(FAKE_SENSOR_DESCRIPTIONS[sensorID], mpackBuffer, MPACK_OUT_BUFFER_SIZE);
-        if(!response.mErrorCode) {
-            Serial.write(mpackBuffer, response.mBytesUsed);
-        }
-    }            
-
-    // Pack and send terminator packet
-    response = pack_terminator_packet(mpackBuffer, MPACK_OUT_BUFFER_SIZE);
+    response = pack_terminator_packet(CONTROLLER_READY_PACKET, mpackBuffer, MPACK_OUT_BUFFER_SIZE);
     if(!response.mErrorCode) {
         Serial.write(mpackBuffer, response.mBytesUsed);
     }
@@ -90,8 +27,8 @@ void handle_send_sensor_description_command(uint8_t sensorID) {
 void handle_send_all_sensor_data_command() {
     PackResponse response;
     HeaderPacket headerPacket = {
+        GET_ALL_SENSOR_VALUES,
         COMMAND_OK,
-        NUM_FAKE_SENSORS
     };
 
     // Pack and send the header data
@@ -109,7 +46,7 @@ void handle_send_all_sensor_data_command() {
     }
 
     // Pack and send terminator packet
-    response = pack_terminator_packet(mpackBuffer, MPACK_OUT_BUFFER_SIZE);
+    response = pack_terminator_packet(GET_ALL_SENSOR_VALUES, mpackBuffer, MPACK_OUT_BUFFER_SIZE);
     if(!response.mErrorCode) {
         Serial.write(mpackBuffer, response.mBytesUsed);
     }
@@ -117,15 +54,14 @@ void handle_send_all_sensor_data_command() {
 
 void handle_send_sensor_data_command(uint8_t sensorID) {
     PackResponse response;
-    HeaderPacket headerPacket;
+    HeaderPacket headerPacket = {
+        GET_SENSOR_VALUE,
+        COMMAND_OK    
+    };
 
-    // Setup the header
-    if(sensorID < NUM_FAKE_SENSORS) {
-        headerPacket.mResponseCode = COMMAND_OK;
-        headerPacket.mSensorDataCount = 1;        
-    } else {
+    // Check for bad sensor ID
+    if(sensorID >= NUM_FAKE_SENSORS) {
         headerPacket.mResponseCode = SENSOR_NOT_FOUND;
-        headerPacket.mSensorDataCount = 0;
     }
     
     
@@ -144,7 +80,7 @@ void handle_send_sensor_data_command(uint8_t sensorID) {
     }            
 
     // Pack and send terminator packet
-    response = pack_terminator_packet(mpackBuffer, MPACK_OUT_BUFFER_SIZE);
+    response = pack_terminator_packet(GET_SENSOR_VALUE, mpackBuffer, MPACK_OUT_BUFFER_SIZE);
     if(!response.mErrorCode) {
         Serial.write(mpackBuffer, response.mBytesUsed);
     }
@@ -161,13 +97,6 @@ void handle_command(SensorCommandIdentifier cmd, uint8_t *argumentBytes) {
             sensorID = argumentBytes[0];
             handle_send_sensor_data_command(sensorID);
             break;
-        case GET_ALL_SENSOR_DESCRIPTIONS:
-            handle_send_all_sensor_descriptions_command();
-            break;
-        case GET_SENSOR_DESCRIPTION:
-            sensorID = argumentBytes[0];
-            handle_send_sensor_description_command(sensorID);
-            break;
         case NO_COMMAND:
         default:
             break;
@@ -180,6 +109,9 @@ void setup() {
     // Setup incoming command buffer
     init_cmd_buffer(&cmdBuffer);
 
+    // Status LED
+    pinMode(LED_BUILTIN, OUTPUT);
+
     // Setup serial
     Serial.begin(115200);
 
@@ -187,11 +119,21 @@ void setup() {
     send_controller_ready();
 }
 
+unsigned long statusLEDOffTime = 0;
+
 void loop() {
     uint8_t *argumentBytes;
+    unsigned long currentTime = millis();
     
     while(Serial.available()) {
+        statusLEDOffTime = (currentTime + 250);
         handle_incoming_byte(&cmdBuffer, Serial.read());
+    }
+
+    if(currentTime > statusLEDOffTime) {
+        digitalWrite(LED_BUILTIN, LOW);
+    } else {
+        digitalWrite(LED_BUILTIN, HIGH);
     }
 
     switch(cmdBuffer.mCommandBufferState) {

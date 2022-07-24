@@ -1,57 +1,39 @@
 #include "sensor_msgpack_data.h"
 #include "mpack.h"
 
+
 // Generic keys
 const char *PACKET_ID_KEY = "packet_id";
 const char *SENSOR_ID_KEY = "sensor_id";
+const char *COMMAND_ID_KEY = "command_id";
 
 const char *READING_TYPE_KEY = "type";
 const char *READING_VALUE_KEY = "value";
 
-
 // Header packet keys
 const char *RESPONSE_CODE_KEY = "response_code";
 const char *SENSOR_DATA_COUNT_KEY = "sensor_data_count";
+const char *TERMINATOR_CODE = "terminator_code";
 
-// Reading details keys
-const char *READING_DETAILS_NAME_KEY = "name";
-const char *READING_DETAILS_MIN_VALUE_KEY = "min_value";
-const char *READING_DETAILS_MAX_VALUE_KEY = "max_value";
-
-// Sensor description keys
-const char *SENSOR_DESCRIPTION_NAME_KEY = "name";
-const char *SENSOR_DESCRIPTION_READING_DETAILS_KEY = "reading_details";
-
+// Reading description keys
+const char *READING_DESCRIPTION_KEY = "reading_description";
+const char *READING_DESCRIPTION_NAME_KEY = "name";
+const char *READING_DESCRIPTION_MIN_VALUE_KEY = "min_value";
+const char *READING_DESCRIPTION_MAX_VALUE_KEY = "max_value";
 
 // Sensor data keys
-const char *SENSOR_DATA_DESCRIPTION_KEY = "sensor_description";
+const char *SENSOR_DATA_NAME_KEY = "name";
 const char *SENSOR_DATA_STATUS_KEY = "sensor_status";
 const char *SENSOR_DATA_READINGS_KEY = "sensor_readings";
 
 
 PackResponse pack_controller_ready_packet(char* outBuf, size_t outBufSize) {
-    // Initialize writer
-    PackResponse response;
-    mpack_writer_t writer;
-    mpack_writer_init(&writer, outBuf, outBufSize);
+    HeaderPacket controllerReadyHeader = {
+        NO_COMMAND,
+        CONTROLLER_READY,
+    };
 
-    // Write out packet data
-    mpack_start_map(&writer, 1);
-
-    // Pack packet ID
-    mpack_write_cstr(&writer, PACKET_ID_KEY);
-    mpack_write_u8(&writer, CONTROLLER_READY_PACKET);
-
-    // Finish building the map
-    mpack_finish_map(&writer);
-
-    // Get the amount of bytes used
-    response.mBytesUsed = mpack_writer_buffer_used(&writer);
-
-    // Finish writing the data
-    response.mErrorCode = mpack_writer_destroy(&writer);
-
-    return response;
+    return pack_header_data(controllerReadyHeader, outBuf, outBufSize);
 }
 
 PackResponse pack_header_data(HeaderPacket headerPacket, char* outBuf, size_t outBufSize) {
@@ -65,16 +47,16 @@ PackResponse pack_header_data(HeaderPacket headerPacket, char* outBuf, size_t ou
 
     // Pack packet ID
     mpack_write_cstr(&writer, PACKET_ID_KEY);
-    mpack_write_u8(&writer, COMMAND_RESPONSE_PACKET);
+    mpack_write_u8(&writer, HEADER_PACKET);
 
+    // Pack command ID
+    mpack_write_cstr(&writer, COMMAND_ID_KEY);
+    mpack_write_u8(&writer, headerPacket.mCommandID);
+    
     // Pack response code
     mpack_write_cstr(&writer, RESPONSE_CODE_KEY);
     mpack_write_u8(&writer, headerPacket.mResponseCode);
     
-    // Pack sensor count
-    mpack_write_cstr(&writer, SENSOR_DATA_COUNT_KEY);
-    mpack_write_u8(&writer, headerPacket.mSensorDataCount);
-
     // Finish building the map
     mpack_finish_map(&writer);
 
@@ -87,18 +69,22 @@ PackResponse pack_header_data(HeaderPacket headerPacket, char* outBuf, size_t ou
     return response;
 }
 
-PackResponse pack_terminator_packet(char* outBuf, size_t outBufSize) {
+PackResponse pack_terminator_packet(uint8_t terminatorCode, char* outBuf, size_t outBufSize) {
     // Initialize writer
     PackResponse response;
     mpack_writer_t writer;
     mpack_writer_init(&writer, outBuf, outBufSize);
 
     // Write out packet data
-    mpack_start_map(&writer, 1);
+    mpack_start_map(&writer, 2);
 
     // Pack packet ID
     mpack_write_cstr(&writer, PACKET_ID_KEY);
     mpack_write_u8(&writer, TERMINATOR_PACKET);
+
+    // Pack terminator code
+    mpack_write_cstr(&writer, TERMINATOR_CODE);
+    mpack_write_u8(&writer, terminatorCode);
 
     // Finish building the map
     mpack_finish_map(&writer);
@@ -111,7 +97,6 @@ PackResponse pack_terminator_packet(char* outBuf, size_t outBufSize) {
 
     return response;
 }
-
 
 void pack_reading_value(ReadingType type, ReadingValue value, mpack_writer_t *writer) {
     switch(type) {
@@ -129,44 +114,89 @@ void pack_reading_value(ReadingType type, ReadingValue value, mpack_writer_t *wr
     }
 }
 
-void pack_reading_details(ReadingDetails *details, mpack_writer_t *writer) {
+void pack_reading_description(const SensorReadingDescription* const description, mpack_writer_t *writer) {
     // Begin
     mpack_start_map(writer, 4);
 
     // Pack the name
-    mpack_write_cstr(writer, READING_DETAILS_NAME_KEY);
-    mpack_write_cstr(writer, details->mReadingName);
+    mpack_write_cstr(writer, READING_DESCRIPTION_NAME_KEY);
+    mpack_write_cstr(writer, description->mReadingName);
 
     // Pack the type
     mpack_write_cstr(writer, READING_TYPE_KEY);
-    mpack_write_u8(writer, details->mType);
+    mpack_write_u8(writer, description->mType);
 
     // Pack the min value
-    mpack_write_cstr(writer, READING_DETAILS_MIN_VALUE_KEY);
-    pack_reading_value(details->mType, details->mMinValue, writer);
+    mpack_write_cstr(writer, READING_DESCRIPTION_MIN_VALUE_KEY);
+    pack_reading_value(description->mType, description->mMinValue, writer);
 
     // Pack the max value
-    mpack_write_cstr(writer, READING_DETAILS_MAX_VALUE_KEY);
-    pack_reading_value(details->mType, details->mMaxValue, writer);
+    mpack_write_cstr(writer, READING_DESCRIPTION_MAX_VALUE_KEY);
+    pack_reading_value(description->mType, description->mMaxValue, writer);
     
     // Done
     mpack_finish_map(writer);
 }
 
-void pack_sensor_reading(SensorReading reading, mpack_writer_t *writer) {
+void pack_sensor_reading(const SensorReading* const reading, mpack_writer_t *writer) {
     // Begin
     mpack_start_map(writer, 2);
 
-    // Pack sensor type
-    mpack_write_cstr(writer, READING_TYPE_KEY);
-    mpack_write_u8(writer, reading.mType);
-
-    // Pack sensor value
-    mpack_write_cstr(writer, READING_VALUE_KEY);
-    pack_reading_value(reading.mType, reading.mValue, writer);
+    // Pack reading description    
+    mpack_write_cstr(writer, READING_DESCRIPTION_KEY);
+    pack_reading_description(reading->mDescription, writer);
     
+    // Pack reading value
+    mpack_write_cstr(writer, READING_VALUE_KEY);
+    pack_reading_value(reading->mDescription->mType, reading->mValue, writer);
+
     // Done
     mpack_finish_map(writer);
+}
+
+PackResponse pack_sensor_data(const SensorData * const sensorData, char* outBuf, size_t outBufSize) {
+    // Initialize writer
+    PackResponse response;
+    mpack_writer_t writer;
+    mpack_writer_init(&writer, outBuf, outBufSize);
+
+    // Write out sensor data
+    mpack_start_map(&writer, 5);
+
+    // Pack packet ID
+    mpack_write_cstr(&writer, PACKET_ID_KEY);
+    mpack_write_u8(&writer, SENSOR_DATA_PACKET);
+
+    // Pack sensor ID
+    mpack_write_cstr(&writer, SENSOR_ID_KEY);
+    mpack_write_u8(&writer, sensorData->mSensorID);
+
+    // Pack sensor name
+    mpack_write_cstr(&writer, SENSOR_DATA_NAME_KEY);
+    mpack_write_cstr(&writer, sensorData->mSensorName);
+
+    // Pack sensor status
+    mpack_write_cstr(&writer, SENSOR_DATA_STATUS_KEY);
+    mpack_write_u8(&writer, sensorData->mStatus);
+
+    // Pack sensor readings
+    mpack_write_cstr(&writer, SENSOR_DATA_READINGS_KEY);
+    mpack_start_array(&writer, sensorData->mNumReadings);
+    for(int i = 0; i < sensorData->mNumReadings; ++i) {
+        pack_sensor_reading(&(sensorData->mSensorReadings[i]), &writer);
+    }
+    mpack_finish_array(&writer);
+
+    // Finish building the map
+    mpack_finish_map(&writer);
+
+    // Get the amount of bytes used
+    response.mBytesUsed = mpack_writer_buffer_used(&writer);
+
+    // Finish writing the data
+    response.mErrorCode = mpack_writer_destroy(&writer);
+
+    return response;
 }
 
 const char * error_to_string(mpack_error_t error) {
@@ -194,86 +224,4 @@ const char * error_to_string(mpack_error_t error) {
         default:
             return "Unknown error";
     }
-}
-
-PackResponse pack_sensor_description(SensorDescription *sensorDescription, char* outBuf, size_t outBufSize) {
-    // Initialize writer
-    PackResponse response;
-    mpack_writer_t writer;
-    mpack_writer_init(&writer, outBuf, outBufSize);
-
-    // Write out sensor description
-    mpack_start_map(&writer, 4);
-
-    // Pack packet ID
-    mpack_write_cstr(&writer, PACKET_ID_KEY);
-    mpack_write_u8(&writer, SENSOR_DESCRIPTION_PACKET);
-
-    // Pack sensor ID
-    mpack_write_cstr(&writer, SENSOR_ID_KEY);
-    mpack_write_u8(&writer, sensorDescription->mSensorID);
-
-    // Pack sensor description
-    mpack_write_cstr(&writer, SENSOR_DESCRIPTION_NAME_KEY);
-    mpack_write_cstr(&writer, sensorDescription->mSensorName);
-
-    // Pack sensor reading details
-    mpack_write_cstr(&writer, SENSOR_DESCRIPTION_READING_DETAILS_KEY);
-    mpack_start_array(&writer, sensorDescription->mNumReadings);
-    for(int i = 0; i < sensorDescription->mNumReadings; ++i) {
-        pack_reading_details(sensorDescription->mReadingDetails[i], &writer);
-    }
-    mpack_finish_array(&writer);
-    
-    // Finish building the map
-    mpack_finish_map(&writer);
-
-    // Get the amount of bytes used
-    response.mBytesUsed = mpack_writer_buffer_used(&writer);
-
-    // Finish writing the data
-    response.mErrorCode = mpack_writer_destroy(&writer);
-
-    return response;
-}
-
-PackResponse pack_sensor_data(SensorData *sensorData, char* outBuf, size_t outBufSize) {
-    // Initialize writer
-    PackResponse response;
-    mpack_writer_t writer;
-    mpack_writer_init(&writer, outBuf, outBufSize);
-
-    // Write out sensor data
-    mpack_start_map(&writer, 4);
-
-    // Pack packet ID
-    mpack_write_cstr(&writer, PACKET_ID_KEY);
-    mpack_write_u8(&writer, SENSOR_DATA_PACKET);
-
-    // Pack sensor ID
-    mpack_write_cstr(&writer, SENSOR_ID_KEY);
-    mpack_write_u8(&writer, sensorData->mSensorID);
-
-    // Pack sensor status
-    mpack_write_cstr(&writer, SENSOR_DATA_STATUS_KEY);
-    mpack_write_u8(&writer, sensorData->mStatus);
-
-    // Pack sensor readings
-    mpack_write_cstr(&writer, SENSOR_DATA_READINGS_KEY);
-    mpack_start_array(&writer, sensorData->mNumReadings);
-    for(int i = 0; i < sensorData->mNumReadings; ++i) {
-        pack_sensor_reading(sensorData->mSensorReadings[i], &writer);
-    }
-    mpack_finish_array(&writer);
-
-    // Finish building the map
-    mpack_finish_map(&writer);
-
-    // Get the amount of bytes used
-    response.mBytesUsed = mpack_writer_buffer_used(&writer);
-
-    // Finish writing the data
-    response.mErrorCode = mpack_writer_destroy(&writer);
-
-    return response;
 }

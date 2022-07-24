@@ -9,35 +9,35 @@
                         /////////////////////////////////////////////////
 
 // Static reading definitions
-ReadingDetails TEMPERATURE_READING_DETAILS = {
-    "Temperature value",                    // mReadingName
+SensorReadingDescription TEMPERATURE_READING_DESCRIPTION = {
+    "Temperature (C)",                      // mReadingName
     FLOAT_READING,                          // mType   
-    {.mFloatValue=-40.0f},                  // mMinValue
-    {.mFloatValue=80.0f}                    // mMaxValue
+    {.mFloatValue=10.0f},                  // mMinValue
+    {.mFloatValue=65.0f}                    // mMaxValue
 };
 
-ReadingDetails HUMIDITY_READING_DETAILS = {
-    "RH value",                             // mReadingName
+SensorReadingDescription HUMIDITY_READING_DESCRIPTION = {
+    "RH (%)",                               // mReadingName
     FLOAT_READING,                          // mType   
     {.mFloatValue=0.0f},                    // mMinValue
     {.mFloatValue=100.0f}                   // mMaxValue
 };
 
-ReadingDetails SOIL_MOISTURE_READING_DETAILS = {
-    "Moisture value",                       // mReadingName,
+SensorReadingDescription SOIL_MOISTURE_READING_DESCRIPTION = {
+    "Moisture level",                       // mReadingName,
     INT_READING,                            // mType   
     {.mIntValue=0},                         // mMinValue
-    {.mIntValue=65535}                      // mMaxValue
+    {.mIntValue=500}                      // mMaxValue
 };
 
-ReadingDetails WEIGHT_READING_DETAILS = {
-    "Weight value (kg)",                    // mReadingName
+SensorReadingDescription WEIGHT_READING_DESCRIPTION = {
+    "Weight (kg)",                          // mReadingName
     FLOAT_READING,                          // mType   
     {.mFloatValue=0.0f},                    // mMinValue
-    {.mFloatValue=200.0f}                   // mMaxValue
+    {.mFloatValue=20.0f}                   // mMaxValue
 };
 
-ReadingDetails BOOL_READING_DETAILS = {
+SensorReadingDescription BOOL_READING_DESCRIPTION = {
     "Active status",                        // mReadingName
     BOOL_READING,                           // mType   
     {.mBoolValue=false},                    // mMinValue
@@ -45,228 +45,145 @@ ReadingDetails BOOL_READING_DETAILS = {
 };
 
 
-// Fake sensor reading details
-ReadingDetails * MOISTURE_SENSOR_READING_DETAILS[] = {
-        &SOIL_MOISTURE_READING_DETAILS
+// Reading objects
+SensorReading MOISTURE_SENSOR_L_READINGS[] = {
+    {
+        &SOIL_MOISTURE_READING_DESCRIPTION,
+        {.mIntValue=129}
+    }    
 };
 
-ReadingDetails * DHT22_SENSOR_READING_DETAILS[] = {
-        &TEMPERATURE_READING_DETAILS,
-        &HUMIDITY_READING_DETAILS
+SensorReading MOISTURE_SENSOR_R_READINGS[] = {
+    {
+        &SOIL_MOISTURE_READING_DESCRIPTION,
+        {.mIntValue=354}
+    }    
 };
 
-ReadingDetails * WEIGHT_SENSOR_READING_DETAILS[] = {
-        &WEIGHT_READING_DETAILS
+SensorReading DHT22_SENSOR_L_READINGS[] = {
+    {
+        &TEMPERATURE_READING_DESCRIPTION,
+        {.mFloatValue=24.5}
+    },
+    {
+        &HUMIDITY_READING_DESCRIPTION,
+        {.mFloatValue=64.5}
+    }
 };
 
-ReadingDetails * SOME_BINARY_SENSOR_READING_DETAILS[] = {
-        &BOOL_READING_DETAILS
+SensorReading DHT22_SENSOR_R_READINGS[] = {
+    {
+        &TEMPERATURE_READING_DESCRIPTION,
+        {.mFloatValue=25.8}
+    },
+    {
+        &HUMIDITY_READING_DESCRIPTION,
+        {.mFloatValue=76.3}
+    }
 };
 
-
-// Fake sensor description structs
-SensorDescription MOISTURE_SENSOR_L_DESCRIPTION = {
-    0,                                      // mSensorID
-    "Left moisture sensor",                 // mSensorName
-    1,                                      // mNumReadings
-    MOISTURE_SENSOR_READING_DETAILS         // mReadingDetails
+SensorReading WEIGHT_SENSOR_L_READINGS[] = {
+    {
+        &WEIGHT_READING_DESCRIPTION,
+        {.mFloatValue=18.24}
+    }
 };
 
-SensorDescription MOISTURE_SENSOR_R_DESCRIPTION = {
-    1,                                      // mSensorID
-    "Right moisture sensor",                // mSensorName
-    1,                                      // mNumReadings
-    MOISTURE_SENSOR_READING_DETAILS         // mReadingDetails
+SensorReading WEIGHT_SENSOR_R_READINGS[] = {
+    {
+        &WEIGHT_READING_DESCRIPTION,
+        {.mFloatValue=11.87}
+    }
 };
 
-SensorDescription DHT22_SENSOR_L_DESCRIPTION = {
-    2,                                      // mSensorID
-    "Left DHT22 Temp/Humidity sensor",      // mSensorName
-    2,                                      // mNumReadings
-    DHT22_SENSOR_READING_DETAILS            // mReadingDetails
+SensorReading BINARY_SENSOR_L_READINGS[] = {
+    {
+        &BOOL_READING_DESCRIPTION,
+        {.mBoolValue=true}
+    }
 };
 
-SensorDescription DHT22_SENSOR_R_DESCRIPTION = {
-    3,                                      // mSensorID
-    "Right DHT22 Temp/Humidity sensor",     // mSensorName
-    2,                                      // mNumReadings
-    DHT22_SENSOR_READING_DETAILS            // mReadingDetails
+SensorReading BINARY_SENSOR_R_READINGS[] = {
+    {
+        &BOOL_READING_DESCRIPTION,
+        {.mBoolValue=false}
+    }
 };
-
-SensorDescription WEIGHT_SENSOR_L_DESCRIPTION = {
-    4,                                      // mSensorID
-    "Left weight sensor",                   // mSensorName
-    1,                                      // mNumReadings
-    WEIGHT_SENSOR_READING_DETAILS           // mReadingDetails
-};
-
-SensorDescription WEIGHT_SENSOR_R_DESCRIPTION = {
-    5,                                      // mSensorID
-    "Right weight sensor",                  // mSensorName
-    1,                                      // mNumReadings
-    WEIGHT_SENSOR_READING_DETAILS           // mReadingDetails
-};
-
-SensorDescription SOME_BINARY_SENSOR_L_DESCRIPTION = {
-    6,                                      // mSensorID
-    "Left On/Off sensor",                   // mSensorName
-    1,                                      // mNumReadings
-    SOME_BINARY_SENSOR_READING_DETAILS      // mReadingDetails
-};
-
-SensorDescription SOME_BINARY_SENSOR_R_DESCRIPTION = {
-    7,                                      // mSensorID
-    "Right On/Off sensor",                  // mSensorName
-    1,                                      // mNumReadings
-    SOME_BINARY_SENSOR_READING_DETAILS      // mReadingDetails
-};
-
 
 
                         //////////////////////////////////////////
                         // Fake sensor data for debug hardware //
                         /////////////////////////////////////////
 
-
-SensorReading MOISTURE_SENSOR_L_SENSOR_READINGS[] = {
-    {
-        INT_READING,                        // mType
-        {.mIntValue = 129},                 // mValue
-    }
-};
-
-SensorReading MOISTURE_SENSOR_R_SENSOR_READINGS[] = {
-    {
-        INT_READING,                        // mType
-        {.mIntValue = 326},                 // mValue
-    }
-};
-
-SensorReading DHT22_SENSOR_L_SENSOR_READINGS[] = {
-    {
-        FLOAT_READING,                      // mType
-        {.mFloatValue = 20.0f},             // mValue
-    },
-    {
-        FLOAT_READING,                      // mType
-        {.mFloatValue = 60.0f},             // mValue
-    }
-};
-
-SensorReading DHT22_SENSOR_R_SENSOR_READINGS[] = {
-    {
-        FLOAT_READING,                      // mType
-        {.mFloatValue = 22.3f},             // mValue
-    },
-    {
-        FLOAT_READING,                      // mType
-        {.mFloatValue = 65.1f},             // mValue
-    }
-};
-
-SensorReading WEIGHT_SENSOR_L_SENSOR_READINGS[] = {
-    {
-        FLOAT_READING,                      // mType
-        {.mFloatValue = 5.2f},              // mValue
-    },
-};
-
-SensorReading WEIGHT_SENSOR_R_SENSOR_READINGS[] = {
-    {
-        FLOAT_READING,                      // mType
-        {.mFloatValue = 8.12f},             // mValue
-    },
-};
-
-SensorReading SOME_BINARY_SENSOR_L_SENSOR_READINGS[] = {
-    {
-        BOOL_READING,                       // mType
-        {.mBoolValue = false},              // mValue
-    }
-};
-
-SensorReading SOME_BINARY_SENSOR_R_SENSOR_READINGS[] = {
-    {
-        BOOL_READING,                       // mType
-        {.mBoolValue = true},               // mValue
-    }
-};
-
-
-
-
-// Fake sensors
 SensorData MOISTURE_SENSOR_L = {
     0,                                      // mSensorID
+    "Left moisture sensor",                 // mSensorName
     CONNECTED_WORKING,                      // mSensorStatus
     1,                                      // mNumReadings
-    MOISTURE_SENSOR_L_SENSOR_READINGS       // mSensorReadings
+    MOISTURE_SENSOR_L_READINGS              // Each individual sensor reading
 };
 
 SensorData MOISTURE_SENSOR_R = {
     1,                                      // mSensorID
+    "Right moisture sensor",                // mSensorName
     CONNECTED_WORKING,                      // mSensorStatus
     1,                                      // mNumReadings
-    MOISTURE_SENSOR_R_SENSOR_READINGS       // mSensorReadings
+    MOISTURE_SENSOR_R_READINGS              // Each individual sensor reading
 };
 
 SensorData DHT22_SENSOR_L = {
     2,                                      // mSensorID
+    "Left DHT22 Temp/Humidity sensor",      // mSensorName
     CONNECTED_WORKING,                      // mSensorStatus
     2,                                      // mNumReadings
-    DHT22_SENSOR_L_SENSOR_READINGS          // mSensorReadings
+    DHT22_SENSOR_L_READINGS                 // mReadingDetails
 };
 
 SensorData DHT22_SENSOR_R = {
     3,                                      // mSensorID
+    "Right DHT22 Temp/Humidity sensor",     // mSensorName
     CONNECTED_WORKING,                      // mSensorStatus
     2,                                      // mNumReadings
-    DHT22_SENSOR_R_SENSOR_READINGS          // mSensorReadings
+    DHT22_SENSOR_R_READINGS                 // mReadingDetails
 };
 
 SensorData WEIGHT_SENSOR_L = {
     4,                                      // mSensorID
+    "Left weight sensor",                   // mSensorName
     CONNECTED_WORKING,                      // mSensorStatus
     1,                                      // mNumReadings
-    WEIGHT_SENSOR_L_SENSOR_READINGS         // mSensorReadings
+    WEIGHT_SENSOR_L_READINGS                // mReadingDetails
 };
-
 
 SensorData WEIGHT_SENSOR_R = {
     5,                                      // mSensorID
+    "Right weight sensor",                  // mSensorName
     CONNECTED_WORKING,                      // mSensorStatus
     1,                                      // mNumReadings
-    WEIGHT_SENSOR_R_SENSOR_READINGS         // mSensorReadings
+    WEIGHT_SENSOR_R_READINGS                // mReadingDetails
 };
 
-SensorData SOME_BINARY_SENSOR_L = {
+SensorData BINARY_SENSOR_L = {
     6,                                      // mSensorID
+    "Left On/Off sensor",                   // mSensorName
     CONNECTED_WORKING,                      // mSensorStatus
     1,                                      // mNumReadings
-    SOME_BINARY_SENSOR_L_SENSOR_READINGS    // mSensorReadings
+    BINARY_SENSOR_L_READINGS                // mReadingDetails
 };
 
-SensorData SOME_BINARY_SENSOR_R = {
+SensorData BINARY_SENSOR_R = {
     7,                                      // mSensorID
+    "Right On/Off sensor",                  // mSensorName
     CONNECTED_WORKING,                      // mSensorStatus
     1,                                      // mNumReadings
-    SOME_BINARY_SENSOR_R_SENSOR_READINGS    // mSensorReadings
+    BINARY_SENSOR_R_READINGS                // mReadingDetails
 };
+
+
 
 
 // Container for the fake sensors/descriptions
 const int NUM_FAKE_SENSORS = 8;
-SensorDescription * FAKE_SENSOR_DESCRIPTIONS[] = {
-    &MOISTURE_SENSOR_L_DESCRIPTION,
-    &MOISTURE_SENSOR_R_DESCRIPTION,
-    &DHT22_SENSOR_L_DESCRIPTION,
-    &DHT22_SENSOR_R_DESCRIPTION,
-    &WEIGHT_SENSOR_L_DESCRIPTION,
-    &WEIGHT_SENSOR_R_DESCRIPTION,
-    &SOME_BINARY_SENSOR_L_DESCRIPTION,
-    &SOME_BINARY_SENSOR_R_DESCRIPTION
-};
-
 
 SensorData * FAKE_SENSORS[] = {
     &MOISTURE_SENSOR_L,
@@ -275,8 +192,9 @@ SensorData * FAKE_SENSORS[] = {
     &DHT22_SENSOR_R,
     &WEIGHT_SENSOR_L,
     &WEIGHT_SENSOR_R,
-    &SOME_BINARY_SENSOR_L,
-    &SOME_BINARY_SENSOR_R
+    &BINARY_SENSOR_L,
+    &BINARY_SENSOR_R
 };
+
 
 #endif  // __FAKE_SENSORS_H
