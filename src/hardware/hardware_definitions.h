@@ -8,29 +8,6 @@
 // Time utility
 #define MILLIS() (to_ms_since_boot(get_absolute_time()))
 
-typedef enum {
-    LOAD_SENSOR             = 0,
-    TEMP_HUMIDITY_SENSOR    = 1,
-    MOISTURE_SENSOR         = 2
-} SensorType;
-
-// Max reading values
-static const float LOAD_SENSOR_MAX_VALUE        = 200.f;
-static const float TEMP_SENSOR_MAX_VALUE        = 100.f;
-static const float RH_SENSOR_MAX_VALUE          = 100.f;
-
-// Sensor IDs/array positions
-typedef enum {
-    LOAD_SENSOR_L       = 0,
-    LOAD_SENSOR_R       = 1,
-    TEMP_SENSOR_L       = 2,
-    TEMP_SENSOR_R       = 3,
-    MOISTURE_SENSOR_L   = 4,
-    MOISTURE_SENSOR_R   = 5,
-
-    NUM_SENSORS
-} SensorID;
-
 // Sensor status LED pins
 typedef enum {
     LOAD_SENSOR_L_ACTIVE_LED        = 21,
@@ -73,10 +50,10 @@ static const uint8_t TEMP_SENSOR_L_CTL                  = 14;
 static const uint8_t TEMP_SENSOR_R_CTL                  = 15;
 
 // Main controller comms pins and values (UART0)
-#define SENSOR_CONTROLLER_UART                          (uart0)
+#define SENSOR_CONTROLLER_UART                          (uart1)
 static const uint8_t SENSOR_CONTROLLER_RX               = 13;
 static const uint8_t SENSOR_CONTROLLER_TX               = 12;
-static const int SENSOR_CONTROLLER_BAUDRATE             = 115200;
+static const int SENSOR_CONTROLLER_BAUDRATE             = 19200;
 
 // Debug/Serial output macro block
 #define DEBUG_PRINT_ON                                  1       // Set to 0 to disable all stdio UART logging
@@ -86,10 +63,10 @@ static const int SENSOR_CONTROLLER_BAUDRATE             = 115200;
 static char DEBUG_PRINT_BUF[DEBUG_PRINT_BUF_SIZE];
 
 // Debug logging pins and values (UART1)
-#   define STDIO_UART                                   (uart1)
+#   define STDIO_UART                                   (uart0)
 static const uint8_t UART_RX                            = 8;
 static const uint8_t UART_TX                            = 9;
-static const int STDIO_UART_BAUDRATE                    = 115200;
+static const int STDIO_UART_BAUDRATE                    = 19200;
 
 
 // Initialize the debug logging system

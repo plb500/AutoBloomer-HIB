@@ -4,6 +4,7 @@
 #include "hardware/flash.h"
 #include "hardware/push_button.h"
 #include "sensor_controller/sensor_controller.h"
+#include "sensor_definitions.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -15,95 +16,9 @@ PushButton _tareButtonR = { LOAD_SENSOR_TARE_R };
 
 // Serial comms interface to main controller
 ControllerInterface _sensorControllerInterface = {
-    SENSOR_CONTROLLER_UART
-};
-
-// Our list of actual sensors
-Sensor _sensorsList[NUM_SENSORS] = {
-    // LOAD_SENSOR_L
-    {
-        {
-            .mHX711 = {
-                LOAD_SENSOR_SCL_L,
-                LOAD_SENSOR_SDA_L,
-                GAIN_FACTOR_128,
-                0,
-                2491.467f,
-            }
-        },
-        LOAD_SENSOR,
-        LOAD_SENSOR_L,
-        false,
-        LOAD_SENSOR_L_JACK_DETECT_PIN
-    },
-    // LOAD_SENSOR_R
-    {
-        {
-            .mHX711 = {
-                LOAD_SENSOR_SCL_R,
-                LOAD_SENSOR_SDA_R,
-                GAIN_FACTOR_128,
-                0,
-                2491.467f,
-            }
-        },
-        LOAD_SENSOR,
-        LOAD_SENSOR_R,
-        false,
-        LOAD_SENSOR_R_JACK_DETECT_PIN
-    },
-    // TEMP_SENSOR_L
-    {
-        {
-            .mDHTSensor = {
-                TEMP_SENSOR_L_CTL,
-                0
-            }
-        },
-        TEMP_HUMIDITY_SENSOR,
-        TEMP_SENSOR_L,
-        false,
-        TEMP_SENSOR_L_JACK_DETECT_PIN
-    },
-    // TEMP_SENSOR_R
-    {
-        {
-            .mDHTSensor = {
-                TEMP_SENSOR_R_CTL,
-                0
-            }
-        },
-        TEMP_HUMIDITY_SENSOR,
-        TEMP_SENSOR_R,
-        false,
-        TEMP_SENSOR_R_JACK_DETECT_PIN
-    },
-    // MOISTURE_SENSOR_L
-    {
-        {
-            .mMoistureSensor = {
-                SENSOR_I2C, 
-                SOIL_SENSOR_3_ADDRESS
-            }
-        },
-        MOISTURE_SENSOR,
-        MOISTURE_SENSOR_L,
-        false,
-        MOISTURE_SENSOR_L_JACK_DETECT_PIN
-    },
-    // MOISTURE_SENSOR_R
-    {
-        {
-            .mMoistureSensor = {
-                SENSOR_I2C, 
-                SOIL_SENSOR_3_ADDRESS
-            }
-        },
-        MOISTURE_SENSOR,
-        MOISTURE_SENSOR_R,
-        false,
-        MOISTURE_SENSOR_R_JACK_DETECT_PIN
-    }
+    .mUART = SENSOR_CONTROLLER_UART,
+    .mMsgPackSensors = SENSOR_MSGPACK,
+    .mNumMsgPackSensors = NUM_SENSORS
 };
 
 // Current sensor data
@@ -160,27 +75,27 @@ void update_sensor_status_indicators(LEDController *ledControllers, SensorData *
     }
 }
 
-void retrieve_tare_values(Sensor *sensors, int numSensors) {
+void retrieve_tare_values(Sensor **sensors, int numSensors) {
     TarePersistence *tp = (TarePersistence*) _flashTargetContents;
 
     DEBUG_PRINT("Last persistence write time: %u\n", tp->mWriteTime);
 
     for(int i = 0; i < numSensors; ++i) {
-        if(sensors[i].mSensorType == LOAD_SENSOR) {
+        if(sensors[i]->mSensorType == LOAD_SENSOR) {
             float tareOffset = (tp->mPersistenceFlag == VALID_TARE_PERSISTENCE_DATA) ? tp->mTareValues[i] : 0.f;
-            sensors[i].mSensor.mHX711.mOffset = tareOffset;
+            sensors[i]->mSensor.mHX711.mOffset = tareOffset;
         }
     }
 }
 
-void persist_tare_values(Sensor *sensors, int numSensors) {
+void persist_tare_values(Sensor **sensors, int numSensors) {
     TarePersistence *tp = (TarePersistence*) _tarePersistenceWriteBuffer;
     tp->mPersistenceFlag = VALID_TARE_PERSISTENCE_DATA;
     tp->mWriteTime = MILLIS();
 
     for(int i = 0; i < numSensors; ++i) {
-        if(sensors[i].mSensorType == LOAD_SENSOR) {
-            tp->mTareValues[i] = sensors[i].mSensor.mHX711.mOffset;
+        if(sensors[i]->mSensorType == LOAD_SENSOR) {
+            tp->mTareValues[i] = sensors[i]->mSensor.mHX711.mOffset;
         } else {
             tp->mTareValues[i] = 0.f;
         }
@@ -230,6 +145,7 @@ int main() {
     // Initialise Controller comms
     init_sensor_controller(&_sensorControllerInterface, SENSOR_CONTROLLER_TX, SENSOR_CONTROLLER_RX, SENSOR_CONTROLLER_BAUDRATE);
     DEBUG_PRINT("Sensor controller serial initialized\n");
+    send_controller_ready(&_sensorControllerInterface);
 
     // Main execution loop
     DEBUG_PRINT("Sensor initialization complete\n");
@@ -244,19 +160,18 @@ int main() {
         if((buttonStateL == BUTTON_HELD) || (buttonStateR == BUTTON_HELD)) {
             if(buttonStateL == BUTTON_HELD) {
                 DEBUG_PRINT("Taring left load sensor\n");
-                flash_led_controller(&_ledControllers[LOAD_SENSOR_L], SLOW_FLASH_PERIOD_MS, DEFAULT_FLASH_DURATION_MS);
-                hx711_tare(&_sensorsList[LOAD_SENSOR_L].mSensor.mHX711, 10);
+                flash_led_controller(&_ledControllers[LOAD_SENSOR_L_ID], SLOW_FLASH_PERIOD_MS, DEFAULT_FLASH_DURATION_MS);
+                hx711_tare(&_sensorsList[LOAD_SENSOR_L_ID]->mSensor.mHX711, 10);
             }
 
             if(buttonStateR == BUTTON_HELD) {
                 DEBUG_PRINT("Taring right load sensor\n");
-                flash_led_controller(&_ledControllers[LOAD_SENSOR_R], SLOW_FLASH_PERIOD_MS, DEFAULT_FLASH_DURATION_MS);
-                hx711_tare(&_sensorsList[LOAD_SENSOR_R].mSensor.mHX711, 10);
+                flash_led_controller(&_ledControllers[LOAD_SENSOR_R_ID], SLOW_FLASH_PERIOD_MS, DEFAULT_FLASH_DURATION_MS);
+                hx711_tare(&_sensorsList[LOAD_SENSOR_R_ID]->mSensor.mHX711, 10);
             }
             
             persistenceDataDirty = true;
         }
-
 
                 // Process sensor input
 
@@ -267,8 +182,7 @@ int main() {
                 // Process serial input
 
         // Handle serial controller I/O
-        // TODO: Reactivate this or nothing will actually work
-        process_sensor_controller_input(&_sensorControllerInterface, _currentSensorData, NUM_SENSORS);
+        update_sensor_controller(&_sensorControllerInterface, _currentSensorData, NUM_SENSORS);
 
 
                 // Update physical output
@@ -283,7 +197,7 @@ int main() {
             DEBUG_PRINT("Done\n");
         }
 
-        // Chill
+        // Chill?
         sleep_ms(1);
     }
 }

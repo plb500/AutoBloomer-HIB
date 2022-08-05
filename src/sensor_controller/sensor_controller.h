@@ -3,87 +3,53 @@
 
 #include "hardware/uart.h"
 #include "hardware/sensors/sensor.h"
-
-typedef enum { 
-    COMMAND_START_BYTE          = 0xFF,
-
-    // Commands
-    GET_ALL_SENSOR_VALUES       = 0x01,
-    GET_SENSOR_VALUE            = 0x02,
-    CONTROLLER_PING             = 0x03
-} SensorCommandValue;
-
-typedef enum {
-    RESPONSE_START_BYTE         = 0xFF,
-    SENSOR_DATA_PACKET_START    = 0xFE,
-
-    SENSOR_DATA                 = 0x01,
-    SENSOR_DATA_ERROR           = 0x03,
-    CONTROLLER_PONG             = 0xEE
-} SensorDataResponseValue;
-
-typedef enum {
-    NO_SENSOR_DATA              = 0x01,
-    VALID_SENSOR_DATA           = 0x02
-} SensorDataResponseStatus;
-
-typedef enum {
-    ERROR_INVALID_SENSOR_ID     = 0x01
-} SensorResponseError;
-
-                                                // OUTPUT //
-                                                // ------ //
-// Sensor Data Packet Structure
-// [0]   SENSOR_DATA_PACKET_START   - 1 byte
-// [1]   Data packet size           - 1 byte
-// [2]   Sensor ID                  - 1 byte
-// [3]   Sensor Status              - 1 byte
-// [4-7] Sensor Reading (if valid)  - 0/2/4 bytes
-//                      Total bytes - 4, 6 or 8 bytes
-
-// Single Sensor Data Response Structure:
-// [0] RESPONSE_START_BYTE                                          - 1 byte
-// [1] Response Size (excluding start marker)                       - 1 byte
-// [2] Response Type (SENSOR_DATA)                                  - 1 byte
-// [3] Sensor Data Packets                                          - (4, 6 or 8 bytes) * # sensors
-// [6 / 8 / 10] Checksum ((response[2] + ... response[z]) & 0xFF)   - 1 byte
-//                                                      Total bytes - 4 + ([8|10|12] * # sensors) bytes
-
-// Sensor Data Error Response Structure
-// [0] RESPONSE_START_BYTE                                          - 1 byte
-// [1] Response Size (excluding start marker)                       - 1 byte
-// [2] Response Type (SENSOR_DATA_ERROR)                            - 1 byte
-// [3] Error Type (SensorResponseError)                             - 1 byte
-// [4] Checksum ((response[2] + response[3]) & 0xFF)                - 1 byte
-//                                                      Total bytes - 5 bytes
+#include "command_definitions.h"
+#include "hardware/sensors/sensor_msgpack.h"
 
 
-                                                // INPUT //
-                                                // ----- //
-// Incoming Command Structure:
-// [-]    Command Start Marker (0xFF)                               - 1 byte
-// [0]    Command Identifier                                        - 1 byte
-// [1, 2] Command Arguments                                         - 2 bytes
-// [3]    Checksum  (([0] + [1] + [2] + [3]) & 0xFF)                - 1 byte
 #define COMMAND_LENGTH (4)
+#define MPACK_OUT_BUFFER_SIZE (512)
+
+
+// States in which the incoming command buffer can be
+typedef enum {
+    AWAITING_DATA               = 0x00,
+    PROCESSING_COMMAND_DATA     = 0x01,
+    HAS_COMPLETE_COMMAND        = 0x02,
+    HAS_INVALID_COMMAND_DATA    = 0x03
+} CommandBufferState;
 
 
 typedef struct {
-    uart_inst_t *mUART;
-    uint8_t mCommandBuffer[COMMAND_LENGTH];
-    uint8_t mCurrentBufferPos;
+    uart_inst_t *mUART;                                     // The UART instance for processing incoming data
+    CommandBufferState mCommandBufferState;                 // Current state of the command buffer
+    SensorCommandIdentifier mCurrentCommand;                // The current command the command buffer is processing
+    uint8_t mCommandBuffer[COMMAND_LENGTH];                 // Buffer for storing incoming serial bytes
+    uint8_t mCurrentBufferPos;                              // Current write position in the incoming buffer
+    uint8_t mMsgPackOutputBuffer[MPACK_OUT_BUFFER_SIZE];    // Byte buffer for outgoing (mpack) serial data
+    uint32_t mNextHeartbeatTime;                            // Time for next heartbeat output pulse
+    MsgPackSensorData **mMsgPackSensors;                    // Description and data storage objects for outgoing packed data
+    uint8_t mNumMsgPackSensors;                             // Number of elements in above array
 } ControllerInterface;
 
 
-void init_sensor_controller(ControllerInterface *controllerInterface,
-                            int txPin,
-                            int rxPin,
-                            uint baudrate);
-bool process_sensor_controller_input(ControllerInterface *controllerInterface, 
-                                     SensorData *sensorData,
-                                     uint8_t numSensors);
-void process_sensor_controller_command_data(ControllerInterface *controllerInterface, 
-                                            SensorData *sensorData,
-                                            uint8_t numSensors);
+// Initialize the sensor controller interface
+void init_sensor_controller(
+    ControllerInterface *controllerInterface,
+    int txPin,
+    int rxPin,
+    uint baudrate
+);
+
+// Perform an update (read from serial port/push command response data) on the
+// controller interface
+bool update_sensor_controller(
+    ControllerInterface *controllerInterface, 
+    SensorData *sensorData,
+    uint8_t numSensors
+);
+
+// Sends a packet through the serial interface indicating that the controller is ready
+void send_controller_ready(ControllerInterface *controllerInterface);
 
 #endif  // SENSOR_CONTROLLER_H

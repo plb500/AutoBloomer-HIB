@@ -3,155 +3,302 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-#include "hardware/gpio.h"
+#include "sensor_definitions.h"
 
-// We can't use 0xFF or 0xFE so the max value for any single byte we can possibly have is 0xFD
-#define MAX_BYTE_VALUE                          (0xFD)
-#define MAX_UINT16_VALUE                        (0xFDFD)
-#define PACK_BYTE(value)                        (MIN(MAX_BYTE_VALUE, value))
-#define PACK_UINT16(value)                      (MIN(MAX_UINT16_VALUE, value))
-#define PACK_FLOAT(value, maxValue)             (PACK_UINT16((uint16_t)round((value / maxValue) * MAX_UINT16_VALUE)))
-
-// Sensor Data Packet Positions
-#define SENSOR_DATA_PACKET_START_POS            (0)
-#define SENSOR_DATA_PACKET_SIZE_POS             (1)
-#define SENSOR_DATA_PACKET_ID_POS               (2)
-#define SENSOR_DATA_PACKET_STATUS_POS           (3)
-#define SENSOR_DATA_PACKET_READING_POS          (4)
-
-#define SENSOR_DATA_RESPONSE_START_POS          (0)
-#define SENSOR_DATA_RESPONSE_SIZE_POS           (1)
-#define SENSOR_DATA_RESPONSE_TYPE_POS           (2)
-#define SENSOR_DATA_RESPONSE_DATA_POS           (3)
-
-#define SENSOR_DATA_ERROR_TYPE_POS              (3)
-#define SENSOR_DATA_ERROR_CHECKSUM_POS          (4)
+const uint32_t HEARTBEAT_TIMEOUT_MS = 5000;
 
 
-void handle_sensor_controller_command(ControllerInterface *controllerInterface,
-                                      SensorCommandValue cmd,
-                                      uint8_t *argumentBytes,
-                                      SensorData *sensorData,
-                                      uint8_t numSensors);
+uint32_t get_current_time_ms();
+void reset_controller_interface(ControllerInterface *controllerInterface, bool resetHeartbeat);
+void send_heartbeat(ControllerInterface *controllerInterface);
+void handle_incoming_byte(ControllerInterface *controllerInterface, uint8_t b);
+bool convert_sensor_data(
+    SensorData *sensorData,
+    uint8_t numSensors,
+    MsgPackSensorData *msgPackSensorData
+);
+void handle_sensor_controller_command(
+    ControllerInterface *controllerInterface,
+    SensorData *sensorData,
+    uint8_t numSensors
+);
+void handle_send_all_sensor_data_command(
+    ControllerInterface *controllerInterface,
+    SensorData *sensorData,
+    uint8_t numSensors
+);
+void handle_send_sensor_data_command(
+    uint8_t sensorID,
+    ControllerInterface *controllerInterface,
+    SensorData *sensorData,
+    uint8_t numSensors
+);
+void write_msgpack_bytes(
+    ControllerInterface *controllerInterface,
+    size_t numBytes
+) {
+    uart_write_blocking(controllerInterface->mUART, controllerInterface->mMsgPackOutputBuffer, numBytes);
+    uart_tx_wait_blocking(controllerInterface->mUART);
+}
 
-#define OUTGOING_BYTE_BUFFER_SIZE               (128)
-uint8_t _outgoingBytesBuffer[OUTGOING_BYTE_BUFFER_SIZE];
 
-uint8_t pack_sensor_data_packet(SensorData *sensorData, uint8_t sensorID, uint8_t *buffer) {
-    buffer[SENSOR_DATA_PACKET_START_POS] = SENSOR_DATA_PACKET_START;
-    buffer[SENSOR_DATA_PACKET_ID_POS] = sensorID;
-    buffer[SENSOR_DATA_PACKET_SIZE_POS] = 1;        // We've only added the ID to the data packet so far
+// Returns the current time since controller boot
+uint32_t get_current_time_ms() {
+    return to_ms_since_boot(get_absolute_time());
+}
 
-    if(sensorData->mIsSensorReadingValid) {
-        switch(sensorData->mType) {
-            case LOAD_SENSOR_DATA:
-            {
-                // Add sensor status
-                buffer[SENSOR_DATA_PACKET_STATUS_POS] = VALID_SENSOR_DATA;
-                buffer[SENSOR_DATA_PACKET_SIZE_POS] += 1;       // Data packet size: 2
+// Resets the interface back to an initial state
+void reset_controller_interface(
+    ControllerInterface *controllerInterface,
+    bool resetHeartbeat
+) {
+    controllerInterface->mCommandBufferState    = AWAITING_DATA;
+    controllerInterface->mCurrentBufferPos      = 0;
+    controllerInterface->mCurrentCommand        = NO_COMMAND;
 
-                // Add sensor reading
-                uint16_t packedData = PACK_FLOAT(sensorData->mSensorReading.mLoadSensorWeight, LOAD_SENSOR_MAX_VALUE);
-                buffer[SENSOR_DATA_PACKET_READING_POS] = ((packedData & 0xFF00) >> 8);
-                buffer[SENSOR_DATA_PACKET_READING_POS + 1] = (packedData & 0x00FF);
-                buffer[SENSOR_DATA_PACKET_SIZE_POS] += 2;       // Data packet size: 4
-                break;
-            }
-            case MOISTURE_SENSOR_DATA:
-            {
-                // Add sensor status
-                buffer[SENSOR_DATA_PACKET_STATUS_POS] = VALID_SENSOR_DATA;
-                buffer[SENSOR_DATA_PACKET_SIZE_POS] += 1;       // Data packet size: 2
+    if(resetHeartbeat) {
+        controllerInterface->mNextHeartbeatTime     = 0;
+    }
+}
 
-                // Add sensor reading
-                uint16_t cappedData = PACK_UINT16(sensorData->mSensorReading.mMoistureSensorValue);
-                buffer[SENSOR_DATA_PACKET_READING_POS] = ((cappedData & 0xFF00) >> 8);
-                buffer[SENSOR_DATA_PACKET_READING_POS + 1] = (cappedData & 0x00FF);
-                buffer[SENSOR_DATA_PACKET_SIZE_POS] += 2;       // Data packet size: 4
-                break;
-            }
-            case TEMP_HUMIDITY_DATA:
-                if(sensorData->mSensorReading.mTempHumidityData.mReadingError == NO_ERROR) {
-                    // Add sensor status
-                    buffer[SENSOR_DATA_PACKET_STATUS_POS] = VALID_SENSOR_DATA;
-                    buffer[SENSOR_DATA_PACKET_SIZE_POS] += 1;       // Data packet size: 2
+// Copy data from active sensor structures into outgoing serial message object
+bool convert_sensor_data(
+    SensorData *sensorData,
+    uint8_t numSensors,
+    MsgPackSensorData *msgPackSensorData
+) {
+    if(!sensorData || !msgPackSensorData) {
+        return false;
+    }
 
-                    // Add sensor readings
-                    uint16_t packedTempData = PACK_FLOAT(sensorData->mSensorReading.mTempHumidityData.mTemperatureC, TEMP_SENSOR_MAX_VALUE);
-                    buffer[SENSOR_DATA_PACKET_READING_POS] = ((packedTempData & 0xFF00) >> 8);
-                    buffer[SENSOR_DATA_PACKET_READING_POS + 1] = (packedTempData & 0x00FF);
-                    buffer[SENSOR_DATA_PACKET_SIZE_POS] += 2;       // Data packet size: 4
-
-                    uint16_t packedHumidityData = PACK_FLOAT(sensorData->mSensorReading.mTempHumidityData.mRelativeHumidity, RH_SENSOR_MAX_VALUE);
-                    buffer[SENSOR_DATA_PACKET_READING_POS + 2] = ((packedHumidityData & 0xFF00) >> 8);
-                    buffer[SENSOR_DATA_PACKET_READING_POS + 3] = (packedHumidityData & 0x00FF);
-                    buffer[SENSOR_DATA_PACKET_SIZE_POS] += 4;       // Data packet size: 6
-                } else {
-                    // Add sensor status
-                    buffer[SENSOR_DATA_PACKET_STATUS_POS] = SENSOR_DATA_ERROR;
-                    buffer[SENSOR_DATA_PACKET_SIZE_POS] += 1;       // Data packet size: 2
-                }
-                break;
-            default:
-                break;
+    // Find the matching sensor data
+    SensorData *foundData = 0;
+    for(int i = 0; i < numSensors; ++i) {
+        if(sensorData[i].mSensorID == msgPackSensorData->mSensorID) {
+            foundData = &(sensorData[i]);
+            break;
         }
-    } else {
-        buffer[SENSOR_DATA_PACKET_STATUS_POS] = NO_SENSOR_DATA;
-        buffer[SENSOR_DATA_PACKET_SIZE_POS] += 1;       // Data packet size: 2
     }
 
-    return (buffer[SENSOR_DATA_PACKET_SIZE_POS] + 2);
-}
-
-uint8_t pack_sensor_pong_response(uint8_t *buffer) {
-    buffer[SENSOR_DATA_RESPONSE_START_POS] = RESPONSE_START_BYTE;
-    buffer[SENSOR_DATA_RESPONSE_TYPE_POS] = CONTROLLER_PONG;
-    buffer[SENSOR_DATA_RESPONSE_SIZE_POS] = 1;    // We've only added the response type to the data packet so far
-
-    return 3;
-}
-
-uint8_t pack_sensor_data_response(SensorData *sensorData, uint8_t numSensors, uint8_t *buffer) {
-    buffer[SENSOR_DATA_RESPONSE_START_POS] = RESPONSE_START_BYTE;
-    buffer[SENSOR_DATA_RESPONSE_TYPE_POS] = SENSOR_DATA;
-    buffer[SENSOR_DATA_RESPONSE_SIZE_POS] = 1;    // We've only added the response type to the data packet so far
-
-    // Pack in sensor data
-    uint8_t *dst = &buffer[SENSOR_DATA_RESPONSE_DATA_POS];
-    uint16_t sensorDataCount = 0;
-    for(int s = 0; s < numSensors; ++s) {
-        sensorDataCount += pack_sensor_data_packet(&sensorData[s], sensorData[s].mSensorID, dst);
-        dst = &buffer[SENSOR_DATA_RESPONSE_DATA_POS + sensorDataCount];
+    if(!foundData) {
+        return false;
     }
 
-    buffer[SENSOR_DATA_RESPONSE_SIZE_POS] += sensorDataCount;
+    // First, set the status
+    msgPackSensorData->mStatus = CONNECTED_WORKING;
+    if(!foundData->mIsSensorConnected) {
+        msgPackSensorData->mStatus = DISCONNECTED;
+    } else if(!foundData->mIsSensorReadingValid) {
+        msgPackSensorData->mStatus = CONNECTED_NOT_WORKING;
+    }
 
-    // Calculate and insert checksum into buffer
+    // Next set the actual readings
+    switch(foundData->mType) {
+        case LOAD_SENSOR:
+            msgPackSensorData->mSensorReadings[LOAD_SENSOR_READING_INDEX].mValue.mFloatValue = foundData->mSensorReading.mLoadSensorWeight;
+            break;
+
+        case MOISTURE_SENSOR:
+            msgPackSensorData->mSensorReadings[MOISTURE_SENSOR_READING_INDEX].mValue.mIntValue = foundData->mSensorReading.mMoistureSensorValue;
+            break;
+
+        case TEMP_HUMIDITY_SENSOR:
+            msgPackSensorData->mSensorReadings[DHT22_TEMPERATURE_READING_INDEX].mValue.mFloatValue = foundData->mSensorReading.mTempHumidityData.mTemperatureC;
+            msgPackSensorData->mSensorReadings[DHT22_HUMIDITY_READING_INDEX].mValue.mFloatValue = foundData->mSensorReading.mTempHumidityData.mRelativeHumidity;
+            break;
+    }
+
+    return true;
+}
+
+// Process an incoming serial byte and create a response, if necessary
+void handle_incoming_byte(ControllerInterface *controllerInterface, uint8_t b) {
+    if(b == COMMAND_START_BYTE) {
+        reset_controller_interface(controllerInterface, false);
+        return;
+    }
+    
+    controllerInterface->mCommandBuffer[controllerInterface->mCurrentBufferPos++] = b;
+
+    if(controllerInterface->mCurrentBufferPos != COMMAND_LENGTH) {
+        controllerInterface->mCommandBufferState = PROCESSING_COMMAND_DATA;
+        return;
+    }
+    
+    // We have a complete command, reset the buffer position and process the command
+    controllerInterface->mCurrentBufferPos = 0;
+
+    // Validate checksum
     uint16_t checksum = 0;
-    for(int i = SENSOR_DATA_RESPONSE_TYPE_POS; i <= buffer[SENSOR_DATA_RESPONSE_SIZE_POS]; ++i) {
-        checksum += buffer[i];
+    for (int i = 0; i < COMMAND_LENGTH - 1; ++i) {
+        checksum += controllerInterface->mCommandBuffer[i];
     }
-    buffer[SENSOR_DATA_RESPONSE_DATA_POS + sensorDataCount] = (uint8_t)(checksum & MAX_BYTE_VALUE);
-    buffer[SENSOR_DATA_RESPONSE_SIZE_POS] += 1;
 
-    return (buffer[SENSOR_DATA_RESPONSE_SIZE_POS] + 2);
+    // Checksum was invalid, set invalid state and return
+    if((checksum & 0xFF) != controllerInterface->mCommandBuffer[COMMAND_LENGTH - 1]) {
+        controllerInterface->mCommandBufferState = HAS_INVALID_COMMAND_DATA;
+        return;
+    }
+
+    // Complete, valid command. Process
+    controllerInterface->mCommandBufferState = HAS_COMPLETE_COMMAND;
+    controllerInterface->mCurrentCommand = (SensorCommandIdentifier) controllerInterface->mCommandBuffer[0];
 }
 
-uint8_t pack_sensor_error_response(SensorResponseError error, uint8_t *buffer) {
-    buffer[SENSOR_DATA_RESPONSE_START_POS] = RESPONSE_START_BYTE;
-    buffer[SENSOR_DATA_RESPONSE_SIZE_POS] = 3;
-    buffer[SENSOR_DATA_RESPONSE_TYPE_POS] = SENSOR_DATA_ERROR;
-    buffer[SENSOR_DATA_ERROR_TYPE_POS] = (uint8_t) error;
-    uint16_t checksum = (buffer[SENSOR_DATA_RESPONSE_TYPE_POS] + buffer[SENSOR_DATA_ERROR_TYPE_POS]);
-    buffer[SENSOR_DATA_ERROR_CHECKSUM_POS] = (uint8_t) (checksum & 0x00FF);
+// Transmit a heartbeat pulse packet
+void send_heartbeat(ControllerInterface *controllerInterface) {
+    PackResponse response;
 
-    return 5;
+    // Pack and send the header data
+    response = pack_heartbeat_packet(controllerInterface->mMsgPackOutputBuffer, MPACK_OUT_BUFFER_SIZE);
+    if(!response.mErrorCode) {
+        write_msgpack_bytes(controllerInterface, response.mBytesUsed);
+    }
+
+    // Pack and send terminator packet
+    response = pack_terminator_packet(HEARTBEAT_PACKET, controllerInterface->mMsgPackOutputBuffer, MPACK_OUT_BUFFER_SIZE);
+    if(!response.mErrorCode) {
+        write_msgpack_bytes(controllerInterface, response.mBytesUsed);
+    }
 }
 
+// Process a complete command received via serial interface
+void handle_sensor_controller_command(
+    ControllerInterface *controllerInterface,
+    SensorData *sensorData,
+    uint8_t numSensors
+) {
+    uint8_t *argumentBytes = &(controllerInterface->mCommandBuffer[1]);
 
-void init_sensor_controller(ControllerInterface *controllerInterface, int txPin,
-                            int rxPin, uint baudrate) {
+    uint8_t sensorID = 0;
+
+    switch(controllerInterface->mCurrentCommand) {
+        case GET_ALL_SENSOR_VALUES:
+            handle_send_all_sensor_data_command(
+                controllerInterface,
+                sensorData,
+                numSensors
+            );
+            break;
+        case GET_SENSOR_VALUE:
+            sensorID = argumentBytes[0];
+            // handle_send_sensor_data_command(sensorID);
+            break;
+        case NO_COMMAND:
+        default:
+            break;
+    }
+}
+
+// Send sensor data from all sensors
+void handle_send_all_sensor_data_command(
+    ControllerInterface *controllerInterface,
+    SensorData *sensorData,
+    uint8_t numSensors
+) {
+    PackResponse response;
+    HeaderPacket headerPacket = {
+        GET_ALL_SENSOR_VALUES,
+        COMMAND_OK,
+    };
+
+    memset(controllerInterface->mMsgPackOutputBuffer, 0, MPACK_OUT_BUFFER_SIZE);
+
+
+    // Pack and send the header data
+    response = pack_header_data(headerPacket, controllerInterface->mMsgPackOutputBuffer, MPACK_OUT_BUFFER_SIZE);
+    if(!response.mErrorCode) {
+        write_msgpack_bytes(controllerInterface, response.mBytesUsed);
+    }
+
+    // Pack and send sensor data
+    for(int i = 0; i < NUM_SENSORS; ++i) {
+        MsgPackSensorData *m = controllerInterface->mMsgPackSensors[i];
+
+        // Convert raw sensor data to msgpack structure
+        if(convert_sensor_data(sensorData, numSensors, m)) {
+        // if(true) { 
+            response = pack_sensor_data(
+                m,
+                controllerInterface->mMsgPackOutputBuffer,
+                MPACK_OUT_BUFFER_SIZE
+            );
+
+            if(!response.mErrorCode) {
+                write_msgpack_bytes(controllerInterface, response.mBytesUsed);
+            }
+        }
+    }
+
+    // Pack and send terminator packet
+    response = pack_terminator_packet(GET_ALL_SENSOR_VALUES, controllerInterface->mMsgPackOutputBuffer, MPACK_OUT_BUFFER_SIZE);
+    if(!response.mErrorCode) {
+        write_msgpack_bytes(controllerInterface, response.mBytesUsed);
+    }
+}
+
+// Send a single piece of sensor data back
+void handle_send_sensor_data_command(
+    uint8_t sensorID,
+    ControllerInterface *controllerInterface,
+    SensorData *sensorData,
+    uint8_t numSensors
+) {
+    PackResponse response;
+    HeaderPacket headerPacket = {
+        GET_SENSOR_VALUE,
+        COMMAND_OK    
+    };
+
+    // Check for bad sensor ID (should probably check the actual IDs but for now this works)
+    if(sensorID >= numSensors) {
+        headerPacket.mResponseCode = SENSOR_NOT_FOUND;
+    }
+    
+    // Convert the sensor data for transmission
+    if(!convert_sensor_data(
+        sensorData,
+        numSensors,
+        controllerInterface->mMsgPackSensors[sensorID]
+    )) {
+        headerPacket.mResponseCode = SENSOR_NOT_FOUND;
+    }
+
+    // Pack and send the header data
+    response = pack_header_data(headerPacket, controllerInterface->mMsgPackOutputBuffer, MPACK_OUT_BUFFER_SIZE);
+    if(!response.mErrorCode) {
+        write_msgpack_bytes(controllerInterface, response.mBytesUsed);
+    }
+
+    // Pack and send sensor data
+    if(headerPacket.mResponseCode == COMMAND_OK) {
+        response = pack_sensor_data(
+            controllerInterface->mMsgPackSensors[sensorID], 
+            controllerInterface->mMsgPackOutputBuffer, 
+            MPACK_OUT_BUFFER_SIZE
+        );
+
+        if(!response.mErrorCode) {
+            write_msgpack_bytes(controllerInterface, response.mBytesUsed);
+        }
+    }
+
+    // Pack and send terminator packet
+    response = pack_terminator_packet(GET_SENSOR_VALUE, controllerInterface->mMsgPackOutputBuffer, MPACK_OUT_BUFFER_SIZE);
+    if(!response.mErrorCode) {
+        write_msgpack_bytes(controllerInterface, response.mBytesUsed);
+    }
+}
+
+// Initialize serial interface and controller port
+void init_sensor_controller(
+    ControllerInterface *controllerInterface,
+    int txPin,
+    int rxPin,
+    uint baudrate
+) {
     // Set up our UART with the required speed.
     uart_init(controllerInterface->mUART, baudrate);
 
@@ -160,97 +307,64 @@ void init_sensor_controller(ControllerInterface *controllerInterface, int txPin,
     gpio_set_function(txPin, GPIO_FUNC_UART);
     gpio_set_function(rxPin, GPIO_FUNC_UART);
 
-    controllerInterface->mCurrentBufferPos = 0;
+    reset_controller_interface(controllerInterface, true);
 
     DEBUG_PRINT("Sensor Controller Ready!\n");
 }
 
-bool process_sensor_controller_input(ControllerInterface *controllerInterface,
-                                     SensorData *sensorData,
-                                     uint8_t numSensors) {
-    while (uart_is_readable(controllerInterface->mUART)) {
-        uint8_t ch = uart_getc(controllerInterface->mUART);
+// Transmit a single packet signalling the system is ready for data
+void send_controller_ready(ControllerInterface *controllerInterface) {
+    PackResponse response;
 
-        if (ch == COMMAND_START_BYTE) {
-            controllerInterface->mCurrentBufferPos = 0;
-            DEBUG_PRINT("New command!\n");
-        } else {
-            controllerInterface
-                ->mCommandBuffer[controllerInterface->mCurrentBufferPos++] = ch;
-            process_sensor_controller_command_data(controllerInterface,
-                                                   sensorData, numSensors);
+    // Pack and send the header data
+    response = pack_controller_ready_packet(controllerInterface->mMsgPackOutputBuffer, response.mBytesUsed);
+    if(!response.mErrorCode) {
+        write_msgpack_bytes(controllerInterface, response.mBytesUsed);
+    }
+
+    // Pack and send terminator packet
+    response = pack_terminator_packet(CONTROLLER_READY_PACKET,controllerInterface->mMsgPackOutputBuffer, response.mBytesUsed);
+    if(!response.mErrorCode) {
+        write_msgpack_bytes(controllerInterface, response.mBytesUsed);
+    }
+}
+
+// Perform updates - will read from serial interface and if necessary transmit a response. Blocking
+bool update_sensor_controller(
+    ControllerInterface *controllerInterface,
+    SensorData *sensorData,
+    uint8_t numSensors
+) {
+    // Check for heartbeat
+    uint32_t currentTimeMS = get_current_time_ms();
+    if(currentTimeMS > controllerInterface->mNextHeartbeatTime) {
+        send_heartbeat(controllerInterface);
+        controllerInterface->mNextHeartbeatTime = (currentTimeMS + HEARTBEAT_TIMEOUT_MS);
+    }
+
+    // Ready incoming bytes and handle responses if appropriate
+    while (uart_is_readable(controllerInterface->mUART)) {
+        handle_incoming_byte(controllerInterface, uart_getc(controllerInterface->mUART));
+
+        switch(controllerInterface->mCommandBufferState) {
+            case AWAITING_DATA:
+            case PROCESSING_COMMAND_DATA:
+                break;
+            case HAS_COMPLETE_COMMAND:
+                handle_sensor_controller_command(
+                    controllerInterface,
+                    sensorData,
+                    numSensors
+                );
+                reset_controller_interface(controllerInterface, false);            
+                break;
+            case HAS_INVALID_COMMAND_DATA:
+                reset_controller_interface(controllerInterface, false);            
+                break;
+            default:
+                break;
         }
     }
 
     return true;
-}
-
-void process_sensor_controller_command_data(ControllerInterface *controllerInterface, 
-                                            SensorData *sensorData,
-                                            uint8_t numSensors) {
-    if (controllerInterface->mCurrentBufferPos != COMMAND_LENGTH) {
-        return;
-    }
-
-    controllerInterface->mCurrentBufferPos = 0;
-
-    // There is a complete command
-    DEBUG_PRINT("Command bytes received\n");
-
-    // Validate checksum
-    uint16_t checksum = 0;
-    for (int i = 0; i < COMMAND_LENGTH - 1; ++i) {
-        checksum += controllerInterface->mCommandBuffer[i];
-    }
-    if ((checksum & 0xFF) !=
-        controllerInterface->mCommandBuffer[COMMAND_LENGTH - 1]) {
-        DEBUG_PRINT(" * Command checksum validation failed!\n");
-        return;
-    }
-
-    // Complete, valid command. Process
-    DEBUG_PRINT(" * Checksum validation success!\n");
-    SensorCommandValue cmd =
-        (SensorCommandValue)controllerInterface->mCommandBuffer[0];
-    uint8_t *argumentBytes = &(controllerInterface->mCommandBuffer[1]);
-    handle_sensor_controller_command(controllerInterface, cmd, argumentBytes, sensorData, numSensors);
-}
-
-void handle_sensor_controller_command(ControllerInterface *controllerInterface,
-                                      SensorCommandValue cmd,
-                                      uint8_t *argumentBytes,
-                                      SensorData *sensorData,
-                                      uint8_t numSensors) {
-    uint8_t responseLen = 0;
-
-    switch (cmd) {
-        case GET_ALL_SENSOR_VALUES:
-            DEBUG_PRINT("Command: GET_ALL_SENSOR_VALUES\n");
-            responseLen = pack_sensor_data_response(sensorData, numSensors, _outgoingBytesBuffer);
-            break;
-
-        case GET_SENSOR_VALUE: {
-            DEBUG_PRINT("Command: GET_SENSOR_VALUE\n");
-            uint8_t sensorID = *argumentBytes;
-            if (sensorID < numSensors) {
-                DEBUG_PRINT(" * Sensor %d is valid\n", sensorID);
-                responseLen = pack_sensor_data_response(&sensorData[sensorID], 1, _outgoingBytesBuffer);
-            } else {
-                responseLen = pack_sensor_error_response(ERROR_INVALID_SENSOR_ID, _outgoingBytesBuffer);
-            }
-            break;
-        }
-
-        case CONTROLLER_PING:
-            DEBUG_PRINT("Command: SENSOR PING\n");
-            responseLen = pack_sensor_pong_response(_outgoingBytesBuffer);
-        
-        default:
-            DEBUG_PRINT(" * Unknown/Unhandled command: %d\n", cmd);
-            break;
-    }
-
-    if(responseLen) {
-        uart_write_blocking(controllerInterface->mUART, _outgoingBytesBuffer, responseLen);
-    }
 }

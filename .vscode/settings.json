@@ -24,8 +24,9 @@
     "types.h": "c",
     "stdint.h": "c",
     "stdlib.h": "c",
-    "sensor_controller.h": "c"
+    "sensor_controller.h": "c",
+    "sensor_msgpack_data.h": "c"
 },
-"cortex-debug.variableUseNaturalFormat": false,
+"cortex-debug.variableUseNaturalFormat": true,
 "C_Cpp.errorSquiggles": "Disabled"
 }

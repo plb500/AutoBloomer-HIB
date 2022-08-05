@@ -6,12 +6,15 @@ set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
 add_executable(PiFeederSensors
     src/pi_feeder_sensor_core.c
+    src/sensor_definitions.c
+    src/mpack/mpack.c
     src/hardware/push_button.c
     src/hardware/led_controller.c
     src/hardware/sensors/sensor.c
     src/hardware/sensors/dht_sensor.c
     src/hardware/sensors/stemma_soil_sensor.c
     src/hardware/sensors/hx711.c
+    src/hardware/sensors/sensor_msgpack.c
     src/sensor_controller/sensor_controller.c
 )
 
