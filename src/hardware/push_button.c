@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-#include "hardware_definitions.h"
+#include "utils.h"
 
 void initialize_push_button(PushButton *pushButton) {
     gpio_init(pushButton->mPin);

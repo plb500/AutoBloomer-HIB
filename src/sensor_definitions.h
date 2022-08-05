@@ -1,7 +1,7 @@
 #ifndef SENSOR_MSGPACK_IMPL_H
 #define SENSOR_MSGPACK_IMPL_H
 
-#include "hardware/hardware_definitions.h"
+#include "hardware_definitions.h"
 #include "hardware/sensors/sensor.h"
 #include "hardware/sensors/sensor_msgpack.h"
 

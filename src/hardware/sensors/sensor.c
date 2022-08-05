@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "debug_io.h"
+
 void initialize_sensor_jack_detect_pin(uint8_t pin) {
     gpio_init(pin);
     gpio_set_dir(pin, GPIO_IN);
@@ -41,9 +43,9 @@ bool initialize_sensor_hardware(Sensor *sensor) {
     return initialized;
 }
 
-void initialize_sensors(Sensor **sensors, uint8_t numSensors) {
+void initialize_sensors(Sensor **sensors, uint8_t numSensors, i2c_inst_t *i2c, const int baud, const int sdaPin, const int sclPin) {
     // Initialize the I2C bus
-    init_sensor_bus(SENSOR_I2C, MOISTURE_I2C_SDA, MOISTURE_I2C_SCL);
+    init_sensor_bus(i2c, baud, sdaPin, sclPin);
 
     // Setup sensors
     for(int i = 0; i < numSensors; ++i) {

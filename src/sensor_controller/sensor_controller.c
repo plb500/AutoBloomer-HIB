@@ -6,11 +6,13 @@
 #include <string.h>
 
 #include "sensor_definitions.h"
+#include "debug_io.h"
+#include "utils.h"
+
 
 const uint32_t HEARTBEAT_TIMEOUT_MS = 5000;
 
 
-uint32_t get_current_time_ms();
 void reset_controller_interface(ControllerInterface *controllerInterface, bool resetHeartbeat);
 void send_heartbeat(ControllerInterface *controllerInterface);
 void handle_incoming_byte(ControllerInterface *controllerInterface, uint8_t b);
@@ -41,12 +43,6 @@ void write_msgpack_bytes(
 ) {
     uart_write_blocking(controllerInterface->mUART, controllerInterface->mMsgPackOutputBuffer, numBytes);
     uart_tx_wait_blocking(controllerInterface->mUART);
-}
-
-
-// Returns the current time since controller boot
-uint32_t get_current_time_ms() {
-    return to_ms_since_boot(get_absolute_time());
 }
 
 // Resets the interface back to an initial state
@@ -336,7 +332,7 @@ bool update_sensor_controller(
     uint8_t numSensors
 ) {
     // Check for heartbeat
-    uint32_t currentTimeMS = get_current_time_ms();
+    uint32_t currentTimeMS = MILLIS();
     if(currentTimeMS > controllerInterface->mNextHeartbeatTime) {
         send_heartbeat(controllerInterface);
         controllerInterface->mNextHeartbeatTime = (currentTimeMS + HEARTBEAT_TIMEOUT_MS);

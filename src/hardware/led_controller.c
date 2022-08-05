@@ -1,7 +1,7 @@
 #include "led_controller.h"
 
 #include "hardware/gpio.h"
-#include "hardware_definitions.h"
+#include "utils.h"
 
 void initialize_led_controller(LEDController *ledController,
                                bool initialState) {

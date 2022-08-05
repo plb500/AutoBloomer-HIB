@@ -1,7 +1,6 @@
 #ifndef SENSOR_H
 #define SENSOR_H
 
-#include "hardware/hardware_definitions.h"
 #include "hardware/led_controller.h"
 #include "hardware/sensors/dht_sensor.h"
 #include "hardware/sensors/hx711.h"
@@ -13,14 +12,6 @@ typedef enum {
     TEMP_HUMIDITY_SENSOR    = 1,
     MOISTURE_SENSOR         = 2
 } SensorType;
-
-/*
-typedef enum {
-    LOAD_SENSOR_DATA            = 0x00,
-    MOISTURE_SENSOR_DATA        = 0x01,
-    TEMP_HUMIDITY_DATA          = 0x02
-} SensorReadingType;
-*/
 
 typedef union {
     float mLoadSensorWeight;
@@ -56,7 +47,7 @@ static const float TEMP_SENSOR_MAX_VALUE        = 100.f;
 static const float RH_SENSOR_MAX_VALUE          = 100.f;
 
 bool is_sensor_connected(Sensor *sensor);
-void initialize_sensors(Sensor **sensors, uint8_t numSensors);
+void initialize_sensors(Sensor **sensors, uint8_t numSensors, i2c_inst_t *i2c, const int baud, const int sdaPin, const int sclPin);
 void update_sensor_readings(Sensor **sensors, SensorData *dataStorage, uint8_t numSensors);
 void update_sensor_indicators(Sensor **sensors, uint8_t numSensors);
 

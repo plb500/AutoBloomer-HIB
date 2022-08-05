@@ -1,6 +1,8 @@
 #include "dht_sensor.h"
-#include "hardware/hardware_definitions.h"
+
 #include <stdio.h>
+
+#include "utils.h"
 
 static inline int wait_for_pin_value(int pin, int value, int timeout)
 {

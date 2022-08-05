@@ -1,13 +1,15 @@
 #include "hardware/sensors/sensor.h"
 
+#include <string.h>
+#include <stdio.h>
+
 #include "pico/multicore.h"
 #include "hardware/flash.h"
 #include "hardware/push_button.h"
 #include "sensor_controller/sensor_controller.h"
 #include "sensor_definitions.h"
-
-#include <string.h>
-#include <stdio.h>
+#include "debug_io.h"
+#include "utils.h"
 
 
 // Push buttons for taring load sensors
@@ -134,7 +136,14 @@ int main() {
     initialize_push_button(&_tareButtonR);
     
     // Initialize sensors
-    initialize_sensors(_sensorsList, NUM_SENSORS);
+    initialize_sensors(
+        _sensorsList, 
+        NUM_SENSORS,
+        SENSOR_I2C,
+        SENSOR_I2C_BAUDRATE,
+        MOISTURE_I2C_SDA,
+        MOISTURE_I2C_SCL
+    );
     retrieve_tare_values(_sensorsList, NUM_SENSORS);
 
     // Initialize LEDs

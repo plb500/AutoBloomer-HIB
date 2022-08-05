@@ -1,7 +1,8 @@
 #include "hx711.h"
 #include "pico/time.h"
-#include "hardware/hardware_definitions.h"
 #include "hardware/sync.h"
+
+#include "utils.h"
 
 
 typedef enum

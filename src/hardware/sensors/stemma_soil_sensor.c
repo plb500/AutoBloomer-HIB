@@ -1,5 +1,4 @@
 #include "stemma_soil_sensor.h"
-#include "hardware/hardware_definitions.h"
 #include "hardware/gpio.h"
 
 #include <stdio.h>
@@ -65,8 +64,8 @@ bool i2c_read_from_register(StemmaSoilSensor *soilSensor, const uint8_t regHigh,
 }
 
 
-void init_sensor_bus(i2c_inst_t *i2c, const int sdaPin, const int sclPin) {
-    i2c_init(i2c, SENSOR_I2C_BAUDRATE);
+void init_sensor_bus(i2c_inst_t *i2c, const int baud, const int sdaPin, const int sclPin) {
+    i2c_init(i2c, baud);
     gpio_set_function(sdaPin, GPIO_FUNC_I2C);
     gpio_set_function(sclPin, GPIO_FUNC_I2C);
 
