@@ -182,6 +182,10 @@ void handle_sensor_controller_command(
             sensorID = argumentBytes[0];
             // handle_send_sensor_data_command(sensorID);
             break;
+        case GET_SENSORS_READY:
+            DEBUG_PRINT("SENDING READY\n");
+            send_controller_ready(controllerInterface);
+            break;
         case NO_COMMAND:
         default:
             break;

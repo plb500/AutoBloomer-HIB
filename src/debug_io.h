@@ -4,7 +4,7 @@
 #include "hardware_definitions.h"
 
 // Debug/Serial output macro block
-#define DEBUG_PRINT_ON                                  1       // Set to 0 to disable all stdio UART logging
+#define DEBUG_PRINT_ON                                  0       // Set to 0 to disable all stdio UART logging
 
 #if DEBUG_PRINT_ON
 #   define DEBUG_PRINT_BUF_SIZE                         (128)

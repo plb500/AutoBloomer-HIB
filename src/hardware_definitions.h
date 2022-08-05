@@ -48,14 +48,14 @@ static const uint8_t TEMP_SENSOR_L_CTL                  = 15;
 
 // Main controller comms pins and values (UART1)
 #define SENSOR_CONTROLLER_UART                          (uart1)
-static const uint8_t SENSOR_CONTROLLER_RX               = 13;
-static const uint8_t SENSOR_CONTROLLER_TX               = 12;
+static const uint8_t SENSOR_CONTROLLER_RX               = 8;
+static const uint8_t SENSOR_CONTROLLER_TX               = 9;
 static const int SENSOR_CONTROLLER_BAUDRATE             = 19200;
 
 // Debug logging pins and values (UART0)
 #define STDIO_UART                                      (uart0)
-static const uint8_t UART_RX                            = 8;
-static const uint8_t UART_TX                            = 9;
+static const uint8_t UART_RX                            = 13;
+static const uint8_t UART_TX                            = 12;
 static const int STDIO_UART_BAUDRATE                    = 19200;
 
 
