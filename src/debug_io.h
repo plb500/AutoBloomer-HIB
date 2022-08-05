@@ -1,19 +1,14 @@
 #ifndef DEBUG_IO_H
 #define DEBUG_IO_H
 
+#include "hardware_definitions.h"
+
 // Debug/Serial output macro block
 #define DEBUG_PRINT_ON                                  1       // Set to 0 to disable all stdio UART logging
 
 #if DEBUG_PRINT_ON
 #   define DEBUG_PRINT_BUF_SIZE                         (128)
 static char DEBUG_PRINT_BUF[DEBUG_PRINT_BUF_SIZE];
-
-// Debug logging pins and values (UART1)
-#   define STDIO_UART                                   (uart0)
-static const uint8_t UART_RX                            = 8;
-static const uint8_t UART_TX                            = 9;
-static const int STDIO_UART_BAUDRATE                    = 19200;
-
 
 // Initialize the debug logging system
 #   define DEBUG_PRINT_INIT()                              { \

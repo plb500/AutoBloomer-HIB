@@ -159,7 +159,7 @@ int main() {
     // Main execution loop
     DEBUG_PRINT("Sensor initialization complete\n");
     while(1) {
-        persistenceDataDirty = false;
+;        persistenceDataDirty = false;
 
                 // Process physical input
 
