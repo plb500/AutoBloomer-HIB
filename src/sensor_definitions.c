@@ -7,7 +7,8 @@ Sensor LOAD_SENSOR_L_HW = {
             LOAD_SENSOR_SDA_L,
             GAIN_FACTOR_128,
             0,
-            2491.467f,
+            1.f,
+            false
         }
     },
     LOAD_SENSOR,
@@ -23,7 +24,8 @@ Sensor LOAD_SENSOR_R_HW = {
             LOAD_SENSOR_SDA_R,
             GAIN_FACTOR_128,
             0,
-            2491.467f,
+            1.f,
+            false
         }
     },
     LOAD_SENSOR,
@@ -188,6 +190,12 @@ MsgPackSensorData MPACK_MOISTURE_SENSOR_L = {
     MOISTURE_SENSOR_L_ID,                   // mSensorID
     "Mother moisture sensor",               // mSensorName
     DISCONNECTED,                           // mSensorStatus
+    {                                       // mCalibration
+        false,                              // mIsCalibratable
+        FLOAT_READING,                      // mCalibrationValueType
+        {.mFloatValue=0.f},                 // mCalibrationRangeMin
+        {.mFloatValue=50.f}                 // mCalibrationRangeMax
+    },
     1,                                      // mNumReadings
    MPACK_MOISTURE_SENSOR_L_READINGS         // Each individual sensor reading
 };
@@ -196,6 +204,12 @@ MsgPackSensorData MPACK_MOISTURE_SENSOR_R = {
     MOISTURE_SENSOR_R_ID,                   // mSensorID
     "Right moisture sensor",                // mSensorName
     DISCONNECTED,                           // mSensorStatus
+    {                                       // mCalibration
+        false,                              // mIsCalibratable
+        FLOAT_READING,                      // mCalibrationValueType
+        {.mFloatValue=0.f},                 // mCalibrationRangeMin
+        {.mFloatValue=50.f}                 // mCalibrationRangeMax
+    },
     1,                                      // mNumReadings
     MPACK_MOISTURE_SENSOR_R_READINGS        // Each individual sensor reading
 };
@@ -204,6 +218,12 @@ MsgPackSensorData MPACK_DHT22_SENSOR_L = {
     TEMP_SENSOR_L_ID,                       // mSensorID
     "Left DHT22 Temp/Humidity sensor",      // mSensorName
     DISCONNECTED,                           // mSensorStatus
+    {                                       // mCalibration
+        false,                              // mIsCalibratable
+        FLOAT_READING,                      // mCalibrationValueType
+        {.mFloatValue=0.f},                 // mCalibrationRangeMin
+        {.mFloatValue=50.f}                 // mCalibrationRangeMax
+    },
     2,                                      // mNumReadings
     MPACK_DHT22_SENSOR_L_READINGS           // mReadingDetails
 };
@@ -212,6 +232,12 @@ MsgPackSensorData MPACK_DHT22_SENSOR_R = {
     TEMP_SENSOR_R_ID,                       // mSensorID
     "Right DHT22 Temp/Humidity sensor",     // mSensorName
     DISCONNECTED,                           // mSensorStatus
+    {                                       // mCalibration
+        false,                              // mIsCalibratable
+        FLOAT_READING,                      // mCalibrationValueType
+        {.mFloatValue=0.f},                 // mCalibrationRangeMin
+        {.mFloatValue=50.f}                 // mCalibrationRangeMax
+    },
     2,                                      // mNumReadings
     MPACK_DHT22_SENSOR_R_READINGS           // mReadingDetails
 };
@@ -220,6 +246,12 @@ MsgPackSensorData MPACK_WEIGHT_SENSOR_L = {
     LOAD_SENSOR_L_ID,                       // mSensorID
     "Left weight sensor",                   // mSensorName
     DISCONNECTED,                           // mSensorStatus
+    {                                       // mCalibration
+        true,                               // mIsCalibratable
+        FLOAT_READING,                      // mCalibrationValueType
+        {.mFloatValue=0.f},                 // mCalibrationRangeMin
+        {.mFloatValue=50.f}                 // mCalibrationRangeMax
+    },
     1,                                      // mNumReadings
     MPACK_WEIGHT_SENSOR_L_READINGS          // mReadingDetails
 };
@@ -228,6 +260,12 @@ MsgPackSensorData MPACK_WEIGHT_SENSOR_R = {
     LOAD_SENSOR_R_ID,                       // mSensorID
     "Right weight sensor",                  // mSensorName
     DISCONNECTED,                           // mSensorStatus
+    {                                       // mCalibration
+        true,                               // mIsCalibratable
+        FLOAT_READING,                      // mCalibrationValueType
+        {.mFloatValue=0.f},                 // mCalibrationRangeMin
+        {.mFloatValue=50.f}                 // mCalibrationRangeMax
+    },
     1,                                      // mNumReadings
     MPACK_WEIGHT_SENSOR_R_READINGS          // mReadingDetails
 };

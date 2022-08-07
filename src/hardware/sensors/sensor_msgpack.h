@@ -2,6 +2,7 @@
 #define SENSOR_MSGPACK_H
 
 #include <unistd.h>
+#include <stdbool.h>
 #include "sensor_controller/command_definitions.h"
 
 /**
@@ -80,7 +81,6 @@ typedef enum {
     DHT22_HUMIDITY_READING_INDEX        = 1
 } ReadingIndex;
 
-
 // Union containing the actual underlying reading value
 typedef union {
     uint16_t mIntValue;
@@ -104,13 +104,27 @@ typedef struct {
     MsgPackReadingValue mValue;    
 } MsgPackSensorReading;
 
+// Parameters defining how this sensor can be calibrated (if at all)
+typedef struct {
+    bool mIsCalibratable;                       // Whether this sensor can be calibrated or not
+    MsgPackReadingType mCalibrationValueType;   // The type of parameter which will be used to calibrate this sensor
+    MsgPackReadingValue mCalibrationRangeMin;   // The minimum of the range the calibration parameter can take
+    MsgPackReadingValue mCalibrationRangeMax;   // The maximum of the range the calibration parameter can take
+} MsgPackSensorCalibrationParameters;
 
 typedef struct {
-    uint8_t mSensorID;                      // Unique sensor identification value
-    const char *mSensorName;                // Sensor name/description
-    SensorStatus mStatus;                   // Current status of sensor
-    int mNumReadings;                       // How many individual reading types this sensor provides (i.e. size of below array)
-    MsgPackSensorReading *mSensorReadings;  // Each individual sensor reading
+    uint8_t mSensorID;
+    MsgPackReadingType mCalibrationType;
+    MsgPackReadingValue mCalibrationValue;
+} MsgPackCalibrationValue;
+
+typedef struct {
+    uint8_t mSensorID;                                          // Unique sensor identification value
+    const char *mSensorName;                                    // Sensor name/description
+    SensorStatus mStatus;                                       // Current status of sensor
+    MsgPackSensorCalibrationParameters mCalibrationParams;      // Calibration type
+    int mNumReadings;                                           // How many individual reading types this sensor provides (i.e. size of below array)
+    MsgPackSensorReading *mSensorReadings;                      // Each individual sensor reading
 } MsgPackSensorData;
 
 
@@ -126,6 +140,8 @@ typedef struct {
     int mErrorCode;                         // Any underlying mpack error code returned during packing (0 = no error - see mpack_error_t in mpack.h for more values)
 } PackResponse;
 
+
+MsgPackCalibrationValue unpack_calibration_value(char *input, int inputSize);
 
 // Pack a heartbeat packet
 PackResponse pack_heartbeat_packet(char* outBuf, size_t outBufSize);

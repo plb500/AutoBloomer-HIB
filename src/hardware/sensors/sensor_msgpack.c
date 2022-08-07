@@ -26,6 +26,45 @@ const char *SENSOR_DATA_NAME_KEY = "name";
 const char *SENSOR_DATA_STATUS_KEY = "sensor_status";
 const char *SENSOR_DATA_READINGS_KEY = "sensor_readings";
 
+// Calibration keys
+const char *SENSOR_CALIBRATION_PARAMS_KEY = "calibration";
+const char *SENSOR_IS_CALIBRATABLE_KEY = "is_calibratable";
+const char *SENSOR_CALIBRATION_TYPE_KEY = "calibration_type";
+const char *SENSOR_CALIBRATION_MIN_KEY = "calibration_min";
+const char *SENSOR_CALIBRATION_MAX_KEY = "calibration_max";
+
+
+MsgPackCalibrationValue unpack_calibration_value(char *input, int inputSize) {
+    // First byte is sensor ID
+    uint8_t sensorID = input[0];
+
+    // Second byte is calibration value type
+    uint8_t calibrationType = input[1];
+
+    MsgPackCalibrationValue calibration = {
+        .mSensorID = sensorID,
+        .mCalibrationType = calibrationType
+    };
+
+    // Remaining bytes are calbration value
+    mpack_reader_t reader;
+    int valueBytesSize = inputSize - 2;
+    mpack_reader_init(&reader, &(input[2]), valueBytesSize, valueBytesSize);
+
+    switch(calibrationType) {
+        case INT_READING:
+            calibration.mCalibrationValue.mIntValue = mpack_expect_i16(&reader);
+        case FLOAT_READING:
+            calibration.mCalibrationValue.mFloatValue = mpack_expect_float(&reader);
+            break;
+
+        case BOOL_READING:
+        default:
+            break;
+    }
+
+    return calibration;
+}
 
 PackResponse pack_heartbeat_packet(char* outBuf, size_t outBufSize) {
     HeaderPacket controllerReadyHeader = {
@@ -163,6 +202,30 @@ void pack_sensor_reading(const MsgPackSensorReading* const reading, mpack_writer
     mpack_finish_map(writer);
 }
 
+void pack_calibration_parameters(const MsgPackSensorCalibrationParameters* const params, mpack_writer_t *writer) {
+    // Begin
+    mpack_start_map(writer, 4);
+
+    // Pack flag
+    mpack_write_cstr(writer, SENSOR_IS_CALIBRATABLE_KEY);
+    mpack_write_bool(writer, params->mIsCalibratable);
+
+    //
+    mpack_write_cstr(writer, SENSOR_CALIBRATION_TYPE_KEY);
+    mpack_write_u8(writer, params->mCalibrationValueType);
+
+
+    // Min and max values
+    mpack_write_cstr(writer, SENSOR_CALIBRATION_MIN_KEY);
+    pack_reading_value(params->mCalibrationValueType, params->mCalibrationRangeMin, writer);
+
+    mpack_write_cstr(writer, SENSOR_CALIBRATION_MAX_KEY);
+    pack_reading_value(params->mCalibrationValueType, params->mCalibrationRangeMax, writer);
+
+    // Done
+    mpack_finish_map(writer);
+}
+
 PackResponse pack_sensor_data(const MsgPackSensorData * const sensorData, char* outBuf, size_t outBufSize) {
     // Initialize writer
     PackResponse response;
@@ -170,7 +233,7 @@ PackResponse pack_sensor_data(const MsgPackSensorData * const sensorData, char* 
     mpack_writer_init(&writer, outBuf, outBufSize);
 
     // Write out sensor data
-    mpack_start_map(&writer, 5);
+    mpack_start_map(&writer, 6);
 
     // Pack packet ID
     mpack_write_cstr(&writer, PACKET_ID_KEY);
@@ -187,6 +250,10 @@ PackResponse pack_sensor_data(const MsgPackSensorData * const sensorData, char* 
     // Pack sensor status
     mpack_write_cstr(&writer, SENSOR_DATA_STATUS_KEY);
     mpack_write_u8(&writer, sensorData->mStatus);
+
+    // Pack calibration
+    mpack_write_cstr(&writer, SENSOR_CALIBRATION_PARAMS_KEY);
+    pack_calibration_parameters(&(sensorData->mCalibrationParams), &writer);
 
     // Pack sensor readings
     mpack_write_cstr(&writer, SENSOR_DATA_READINGS_KEY);

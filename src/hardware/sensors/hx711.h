@@ -17,6 +17,7 @@ typedef struct
     HX711GainFactor mGain;  // Amplification factor
     int32_t mOffset;        // Used for tare weight
     float mScale;           // Used to return weight
+    bool mNeedsSaving;      // Whether the persistable values in this sensor require saving
 } HX711;
 
 // Initialize library with data output pin, clock input pin and gain factor.
@@ -51,6 +52,10 @@ float hx711_get_units(HX711 *hx711, uint8_t times);
 
 // set the OFFSET value for tare weight; times = how many times to read the tare value
 void hx711_tare(HX711 *hx711, uint8_t times);
+
+// Calculates the calibration scale for the supplied sensor against the supplied value, returning it (and also 
+// setting it inside the supplied sensor struct)
+float calibrate_to_value(HX711 *hx711, uint8_t times, float calibrated_value);
 
 // puts the chip into power down mode
 void hx711_power_down(HX711 *hx711);

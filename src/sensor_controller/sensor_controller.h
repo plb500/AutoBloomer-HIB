@@ -7,8 +7,9 @@
 #include "hardware/sensors/sensor_msgpack.h"
 
 
-#define COMMAND_LENGTH (4)
-#define MPACK_OUT_BUFFER_SIZE (512)
+#define ARGUMENT_LENGTH         (8)
+#define COMMAND_LENGTH          (ARGUMENT_LENGTH + 1 + 1)   // Argument bytes +1 byte for command ID and +1 byte for checksum
+#define MPACK_OUT_BUFFER_SIZE   (512)
 
 
 // States in which the incoming command buffer can be
@@ -44,7 +45,8 @@ void init_sensor_controller(
 // Perform an update (read from serial port/push command response data) on the
 // controller interface
 bool update_sensor_controller(
-    ControllerInterface *controllerInterface, 
+    ControllerInterface *controllerInterface,
+    Sensor **sensor,
     SensorData *sensorData,
     uint8_t numSensors
 );

@@ -50,12 +50,9 @@ bool hx711_is_ready(HX711 *hx711)
 void hx711_wait_ready(HX711 *hx711, uint32_t delayMS)
 {
     // Wait for the chip to become ready.
-    // This is a blocking implementation and will
-    // halt the sketch until a load cell is connected.
+    // Blocks until a load cell is connected.
     while (!hx711_is_ready(hx711))
     {
-        // Probably will do no harm on AVR but will feed the Watchdog Timer (WDT) on ESP.
-        // https://github.com/bogde/HX711/issues/73
         sleep_ms(delayMS);
     }
 }
@@ -160,11 +157,9 @@ int32_t hx711_read_average(HX711 *hx711, uint8_t times)
     for (uint8_t i = 0; i < times; i++)
     {
         sum += hx711_read(hx711);
-        // Probably will do no harm on AVR but will feed the Watchdog Timer (WDT) on ESP.
-        // https://github.com/bogde/HX711/issues/73
-        //sleep_ms(0);
+        sleep_ms(0);
     }
-    return sum / times;
+    return sum ? (sum / times) : sum;
 }
 
 int32_t hx711_get_value(HX711 *hx711, uint8_t times)
@@ -176,12 +171,22 @@ int32_t hx711_get_value(HX711 *hx711, uint8_t times)
 float hx711_get_units(HX711 *hx711, uint8_t times)
 {
     float value = (float) hx711_get_value(hx711, times); 
-    return value / hx711->mScale;
+    return value * hx711->mScale;
+}
+
+float calibrate_to_value(HX711 *hx711, uint8_t times, float calibrated_value) {
+    float value = (float) hx711_get_value(hx711, times); 
+    hx711->mScale = (calibrated_value / value);
+
+    hx711->mNeedsSaving = true;
+
+    return hx711->mScale;
 }
 
 void hx711_tare(HX711 *hx711, uint8_t times)
 {
     hx711->mOffset = hx711_read_average(hx711, times);
+    hx711->mNeedsSaving = true;
 }
 
 void hx711_power_down(HX711 *hx711)

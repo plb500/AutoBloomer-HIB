@@ -50,12 +50,13 @@ LEDController _ledControllers[NUM_SENSORS] = {
 
 
 // Load sensor persistence values
-static const uint32_t VALID_TARE_PERSISTENCE_DATA = 0xDEADBEEF;
+static const uint32_t VALID_LOAD_PERSISTENCE_DATA = 0xDEADBEEF;
 typedef struct {
     uint32_t mPersistenceFlag;
     float mTareValues[NUM_SENSORS];
+    float mScaleValues[NUM_SENSORS];
     uint32_t mWriteTime;
-} TarePersistence;
+} LoadSensorPersistence;
 
 // We're going to erase and reprogram a region 256k from the start of flash.
 // Once done, we can access this at XIP_BASE + 256k.
@@ -64,10 +65,10 @@ const uint8_t *_flashTargetContents = (const uint8_t *) (XIP_BASE + FLASH_TARGET
 
 // We'll have a static buffer to write into temporarily during the 
 // sensor update and then copy to flash
-#define NUM_TARE_FLASH_PAGES            ((sizeof(TarePersistence) / FLASH_PAGE_SIZE) + 1)
-#define TARE_PERSISTENCE_BUFFER_SIZE    (NUM_TARE_FLASH_PAGES * FLASH_PAGE_SIZE)
-#define NUM_TARE_FLASH_SECTORS          ((TARE_PERSISTENCE_BUFFER_SIZE / FLASH_SECTOR_SIZE) + 1)
-uint8_t _tarePersistenceWriteBuffer[TARE_PERSISTENCE_BUFFER_SIZE];
+#define NUM_LOAD_FLASH_PAGES            ((sizeof(LoadSensorPersistence) / FLASH_PAGE_SIZE) + 1)
+#define LOAD_PERSISTENCE_BUFFER_SIZE    (NUM_LOAD_FLASH_PAGES * FLASH_PAGE_SIZE)
+#define NUM_LOAD_FLASH_SECTORS          ((LOAD_PERSISTENCE_BUFFER_SIZE / FLASH_SECTOR_SIZE) + 1)
+uint8_t _loadSensorPersistenceWriteBuffer[LOAD_PERSISTENCE_BUFFER_SIZE];
 
 
 void update_sensor_status_indicators(LEDController *ledControllers, SensorData *sensorData, uint8_t numSensors) {
@@ -77,48 +78,58 @@ void update_sensor_status_indicators(LEDController *ledControllers, SensorData *
     }
 }
 
-void retrieve_tare_values(Sensor **sensors, int numSensors) {
-    TarePersistence *tp = (TarePersistence*) _flashTargetContents;
+void retrieve_load_sensor_values(Sensor **sensors, int numSensors) {
+    LoadSensorPersistence *lp = (LoadSensorPersistence*) _flashTargetContents;
 
-    DEBUG_PRINT("Last persistence write time: %u\n", tp->mWriteTime);
+    DEBUG_PRINT("Last load sensor write time: %u\n", lp->mWriteTime);
 
     for(int i = 0; i < numSensors; ++i) {
         if(sensors[i]->mSensorType == LOAD_SENSOR) {
-            float tareOffset = (tp->mPersistenceFlag == VALID_TARE_PERSISTENCE_DATA) ? tp->mTareValues[i] : 0.f;
+            float tareOffset = (lp->mPersistenceFlag == VALID_LOAD_PERSISTENCE_DATA) ? lp->mTareValues[i] : 0.f;
+            float scale = (lp->mPersistenceFlag == VALID_LOAD_PERSISTENCE_DATA) ? lp->mScaleValues[i] : 1.f;
             sensors[i]->mSensor.mHX711.mOffset = tareOffset;
+            sensors[i]->mSensor.mHX711.mScale = scale;
         }
     }
 }
 
-void persist_tare_values(Sensor **sensors, int numSensors) {
-    TarePersistence *tp = (TarePersistence*) _tarePersistenceWriteBuffer;
-    tp->mPersistenceFlag = VALID_TARE_PERSISTENCE_DATA;
-    tp->mWriteTime = MILLIS();
+void persist_load_sensor_values(Sensor **sensors, int numSensors) {
+    LoadSensorPersistence *lp = (LoadSensorPersistence*) _loadSensorPersistenceWriteBuffer;
+    lp->mPersistenceFlag = VALID_LOAD_PERSISTENCE_DATA;
+    lp->mWriteTime = MILLIS();
 
     for(int i = 0; i < numSensors; ++i) {
         if(sensors[i]->mSensorType == LOAD_SENSOR) {
-            tp->mTareValues[i] = sensors[i]->mSensor.mHX711.mOffset;
+            lp->mTareValues[i] = sensors[i]->mSensor.mHX711.mOffset;
+            lp->mScaleValues[i] = sensors[i]->mSensor.mHX711.mScale;
         } else {
-            tp->mTareValues[i] = 0.f;
+            lp->mTareValues[i] = 0.f;
+            lp->mScaleValues[i] = 0.f;
         }
     }
 
-    // Copy tare persistence data into flash.
+    // Copy load sensor persistence data into flash.
     // For safety, we should not be interrupted during the write,
     // so disable interrupts 
     uint32_t status = save_and_disable_interrupts();
 
     // Start by wiping the persistence region
     // Note that a whole number of sectors must be erased at a time.
-    flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE * NUM_TARE_FLASH_SECTORS);
+    flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE * NUM_LOAD_FLASH_SECTORS);
 
     // Program the target region. Can only program multiples of 256 bytes (one page)
-    flash_range_program(FLASH_TARGET_OFFSET, _tarePersistenceWriteBuffer, TARE_PERSISTENCE_BUFFER_SIZE);
+    flash_range_program(FLASH_TARGET_OFFSET, _loadSensorPersistenceWriteBuffer, LOAD_PERSISTENCE_BUFFER_SIZE);
 
     // We are done - we can re-enable interrupts
     restore_interrupts(status);
 
-    DEBUG_PRINT("Wrote persistence values. Write time: %u\n", tp->mWriteTime);
+    for(int i = 0; i < numSensors; ++i) {
+        if(sensors[i]->mSensorType == LOAD_SENSOR) {
+            sensors[i]->mSensor.mHX711.mNeedsSaving = false;
+        }
+    }
+
+    DEBUG_PRINT("Wrote persistence values. Write time: %u\n", lp->mWriteTime);
 }
 
 int main() {
@@ -129,7 +140,7 @@ int main() {
     DEBUG_PRINT_INIT();
 
     // Initialize persistence data
-    memset(_tarePersistenceWriteBuffer, 0, TARE_PERSISTENCE_BUFFER_SIZE);
+    memset(_loadSensorPersistenceWriteBuffer, 0, LOAD_PERSISTENCE_BUFFER_SIZE);
 
     // Initialize tare buttons
     initialize_push_button(&_tareButtonL);
@@ -144,7 +155,7 @@ int main() {
         MOISTURE_I2C_SDA,
         MOISTURE_I2C_SCL
     );
-    retrieve_tare_values(_sensorsList, NUM_SENSORS);
+    retrieve_load_sensor_values(_sensorsList, NUM_SENSORS);
 
     // Initialize LEDs
     for(int i = 0; i < NUM_SENSORS; ++i) {
@@ -159,8 +170,6 @@ int main() {
     // Main execution loop
     DEBUG_PRINT("Sensor initialization complete\n");
     while(1) {
-;        persistenceDataDirty = false;
-
                 // Process physical input
 
         // Check for load sensor tare
@@ -178,8 +187,6 @@ int main() {
                 flash_led_controller(&_ledControllers[LOAD_SENSOR_R_ID], SLOW_FLASH_PERIOD_MS, DEFAULT_FLASH_DURATION_MS);
                 hx711_tare(&_sensorsList[LOAD_SENSOR_R_ID]->mSensor.mHX711, 10);
             }
-            
-            persistenceDataDirty = true;
         }
 
                 // Process sensor input
@@ -191,7 +198,7 @@ int main() {
                 // Process serial input
 
         // Handle serial controller I/O
-        update_sensor_controller(&_sensorControllerInterface, _currentSensorData, NUM_SENSORS);
+        update_sensor_controller(&_sensorControllerInterface, _sensorsList, _currentSensorData, NUM_SENSORS);
 
 
                 // Update physical output
@@ -200,9 +207,20 @@ int main() {
         update_sensor_status_indicators(_ledControllers, _currentSensorData, NUM_SENSORS);
 
         // Persist data if required
+        bool persistenceDataDirty = false;
+        for(int i = 0; i < NUM_SENSORS; ++i) {
+            if(
+                (_sensorsList[i]->mSensorType == LOAD_SENSOR) && 
+                _sensorsList[i]->mSensor.mHX711.mNeedsSaving
+            ) {
+                persistenceDataDirty = true;
+                break;
+            }
+        }
+
         if(persistenceDataDirty) {
-            DEBUG_PRINT("Persisting tare values to flash\n");
-            persist_tare_values(_sensorsList, NUM_SENSORS);
+            DEBUG_PRINT("Persisting load sensor values to flash\n");
+            persist_load_sensor_values(_sensorsList, NUM_SENSORS);
             DEBUG_PRINT("Done\n");
         }
 

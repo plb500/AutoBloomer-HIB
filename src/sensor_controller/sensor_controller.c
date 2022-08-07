@@ -8,6 +8,7 @@
 #include "sensor_definitions.h"
 #include "debug_io.h"
 #include "utils.h"
+#include "hardware/sensors/sensor_msgpack.h"
 
 
 const uint32_t HEARTBEAT_TIMEOUT_MS = 5000;
@@ -23,6 +24,7 @@ bool convert_sensor_data(
 );
 void handle_sensor_controller_command(
     ControllerInterface *controllerInterface,
+    Sensor **sensor,
     SensorData *sensorData,
     uint8_t numSensors
 );
@@ -143,6 +145,33 @@ void handle_incoming_byte(ControllerInterface *controllerInterface, uint8_t b) {
     controllerInterface->mCurrentCommand = (SensorCommandIdentifier) controllerInterface->mCommandBuffer[0];
 }
 
+void handle_calibrate_sensor_command(Sensor** sensors, int numSensors, uint8_t *calibrationValueBytes) {
+    MsgPackCalibrationValue calibration = unpack_calibration_value(calibrationValueBytes, ARGUMENT_LENGTH);
+
+    Sensor *calibrationSensor = 0;
+    for(int i = 0; i < numSensors; ++i) {
+        if(sensors[i]->mSensorID == calibration.mSensorID) {
+            calibrationSensor = sensors[i];
+            break;
+        }
+    }
+
+    if(!calibrationSensor) {
+        return;
+    }
+
+    switch(calibrationSensor->mSensorType) {
+        case LOAD_SENSOR:
+            DEBUG_PRINT("Calibrating load sensor %d with value %f\n", calibration.mSensorID, calibration.mCalibrationValue.mFloatValue);
+            calibrate_to_value(&calibrationSensor->mSensor.mHX711, 10, calibration.mCalibrationValue.mFloatValue);
+            break;
+        case TEMP_HUMIDITY_SENSOR:
+        case MOISTURE_SENSOR:
+        default:
+            break;
+    }
+}
+
 // Transmit a heartbeat pulse packet
 void send_heartbeat(ControllerInterface *controllerInterface) {
     PackResponse response;
@@ -163,6 +192,7 @@ void send_heartbeat(ControllerInterface *controllerInterface) {
 // Process a complete command received via serial interface
 void handle_sensor_controller_command(
     ControllerInterface *controllerInterface,
+    Sensor **sensors,
     SensorData *sensorData,
     uint8_t numSensors
 ) {
@@ -185,6 +215,9 @@ void handle_sensor_controller_command(
         case GET_SENSORS_READY:
             DEBUG_PRINT("SENDING READY\n");
             send_controller_ready(controllerInterface);
+            break;
+        case CALIBRATE_SENSOR:
+            handle_calibrate_sensor_command(sensors, numSensors, argumentBytes);
             break;
         case NO_COMMAND:
         default:
@@ -332,6 +365,7 @@ void send_controller_ready(ControllerInterface *controllerInterface) {
 // Perform updates - will read from serial interface and if necessary transmit a response. Blocking
 bool update_sensor_controller(
     ControllerInterface *controllerInterface,
+    Sensor **sensors,
     SensorData *sensorData,
     uint8_t numSensors
 ) {
@@ -353,6 +387,7 @@ bool update_sensor_controller(
             case HAS_COMPLETE_COMMAND:
                 handle_sensor_controller_command(
                     controllerInterface,
+                    sensors,
                     sensorData,
                     numSensors
                 );

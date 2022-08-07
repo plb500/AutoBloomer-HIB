@@ -6,7 +6,8 @@ typedef enum {
     NO_COMMAND                  = 0x00,
     GET_ALL_SENSOR_VALUES       = 0x01,
     GET_SENSOR_VALUE            = 0x02,
-    GET_SENSORS_READY           = 0x03
+    GET_SENSORS_READY           = 0x03,
+    CALIBRATE_SENSOR            = 0x04
 } SensorCommandIdentifier;
 
 
