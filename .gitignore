@@ -16,3 +16,4 @@ build/
 .DS_Store
 
 \#auto_saved_files\#
+hardware/sensor_board/export/
