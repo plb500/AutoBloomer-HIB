@@ -13,19 +13,25 @@ add_executable(PiFeederSensors
     src/hardware/sensors/sensor.c
     src/hardware/sensors/dht_sensor.c
     src/hardware/sensors/stemma_soil_sensor.c
-    src/hardware/sensors/hx711.c
+    src/hardware/sensors/sonar_sensor.c
     src/hardware/sensors/sensor_msgpack.c
     src/sensor_controller/sensor_controller.c
 )
 
+pico_generate_pio_header(PiFeederSensors ${CMAKE_CURRENT_LIST_DIR}/src/pio/uart_rx.pio)
+
 pico_enable_stdio_usb(PiFeederSensors 0)
 pico_enable_stdio_uart(PiFeederSensors 1)
 pico_add_extra_outputs(PiFeederSensors)
-include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(
+    ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/extern/hx711-pico-c
+)
 target_link_libraries(PiFeederSensors
     pico_stdlib
     hardware_i2c
     hardware_uart
+    hardware_pio
     pico_multicore 
     hardware_flash
 )

@@ -7,8 +7,8 @@
 
 // Sensor IDs/array positions
 typedef enum {
-    LOAD_SENSOR_L_ID        = 0,
-    LOAD_SENSOR_R_ID        = 1,
+    SONAR_SENSOR_L_ID       = 0,
+    SONAR_SENSOR_R_ID       = 1,
     TEMP_SENSOR_L_ID        = 2,
     TEMP_SENSOR_R_ID        = 3,
     MOISTURE_SENSOR_L_ID    = 4,
@@ -17,8 +17,10 @@ typedef enum {
     NUM_SENSORS
 } SensorID;
 
-extern Sensor LOAD_SENSOR_L_HW;
-extern Sensor LOAD_SENSOR_R_HW;
+
+extern SonarPIOWrapper PIO_WRAPPER;
+extern Sensor SONAR_SENSOR_L_HW;
+extern Sensor SONAR_SENSOR_R_HW;
 extern Sensor TEMP_SENSOR_L_HW;
 extern Sensor TEMP_SENSOR_R_HW;
 extern Sensor MOISTURE_SENSOR_L_HW;

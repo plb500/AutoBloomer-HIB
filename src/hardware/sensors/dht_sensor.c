@@ -17,6 +17,9 @@ static inline int wait_for_pin_value(int pin, int value, int timeout)
 void init_DHT22(DHT22Sensor *sensor) {
     gpio_init(sensor->mDataPin);
     sensor->mLastReadTime = 0;
+    sensor->mLastHumidityReading = -1.f;
+    sensor->mLastTemperatureReading -1.f;
+
 }
 
 void read_DHT22(DHT22Sensor *sensor, DHT22Data *readings)
@@ -24,6 +27,8 @@ void read_DHT22(DHT22Sensor *sensor, DHT22Data *readings)
     const uint32_t currentTime = MILLIS();
     if((currentTime - sensor->mLastReadTime) < DHT22_SAMPLE_RATE_DELAY_MS) {
         // Not time for sample reading yet
+        readings->mRelativeHumidity = sensor->mLastHumidityReading;
+        readings->mTemperatureC = sensor->mLastTemperatureReading;
         return;
     }
 
@@ -146,16 +151,18 @@ void read_DHT22(DHT22Sensor *sensor, DHT22Data *readings)
     // Everything looks good. Convert raw response
 
     // Humidity
-    readings->mRelativeHumidity = (((uint16_t)rawResponse[0] << 8) | rawResponse[1]);
-    readings->mRelativeHumidity *= 0.1;
+    sensor->mLastHumidityReading = (((uint16_t)rawResponse[0] << 8) | rawResponse[1]);
+    sensor->mLastHumidityReading *= 0.1;
+    readings->mRelativeHumidity = sensor->mLastHumidityReading;
 
     // Temperature
-    readings->mTemperatureC = ((((uint16_t)(rawResponse[2] & 0x7F)) << 8) | rawResponse[3]);
-    readings->mTemperatureC *= 0.1;
+    sensor->mLastTemperatureReading = ((((uint16_t)(rawResponse[2] & 0x7F)) << 8) | rawResponse[3]);
+    sensor->mLastTemperatureReading *= 0.1;
     if (rawResponse[2] & 0x80)
     {
-        readings->mTemperatureC *= -1;
+        sensor->mLastTemperatureReading *= -1;
     }
+    readings->mTemperatureC = sensor->mLastTemperatureReading;
 
     readings->mReadingError = false;
 }

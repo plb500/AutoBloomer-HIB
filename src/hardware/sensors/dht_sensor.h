@@ -23,6 +23,8 @@ typedef struct {
 typedef struct {
     const uint8_t mDataPin;
     uint32_t mLastReadTime;
+    float mLastHumidityReading;
+    float mLastTemperatureReading;
 } DHT22Sensor;
 
 static const uint32_t DHT22_SAMPLE_RATE_DELAY_MS = 2500;        // Sample once every 2.5s

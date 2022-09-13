@@ -3,18 +3,18 @@
 
 #include "hardware/led_controller.h"
 #include "hardware/sensors/dht_sensor.h"
-#include "hardware/sensors/hx711.h"
 #include "hardware/sensors/stemma_soil_sensor.h"
+#include "hardware/sensors/sonar_sensor.h"
 
 
 typedef enum {
-    LOAD_SENSOR             = 0,
+    SONAR_SENSOR            = 0,
     TEMP_HUMIDITY_SENSOR    = 1,
     MOISTURE_SENSOR         = 2
 } SensorType;
 
 typedef union {
-    float mLoadSensorWeight;
+    uint16_t mSonarSensorDistance;
     uint16_t mMoistureSensorValue;
     DHT22Data mTempHumidityData;
 } SensorReading;
@@ -28,7 +28,7 @@ typedef struct {
 } SensorData;
 
 typedef union {
-    HX711               mHX711;
+    SonarSensor         mSonarSensor;
     DHT22Sensor         mDHTSensor;
     StemmaSoilSensor    mMoistureSensor;
 } SensorHardware;
@@ -42,7 +42,7 @@ typedef struct {
 } Sensor;
 
 // Max reading values
-static const float LOAD_SENSOR_MAX_VALUE        = 200.f;
+static const uint16_t SONAR_SENSOR_MAX_VALUE    = 16000;
 static const float TEMP_SENSOR_MAX_VALUE        = 100.f;
 static const float RH_SENSOR_MAX_VALUE          = 100.f;
 

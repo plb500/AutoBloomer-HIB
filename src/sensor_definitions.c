@@ -1,37 +1,42 @@
 #include "sensor_definitions.h" 
 
-Sensor LOAD_SENSOR_L_HW = {
-    {
-        .mHX711 = {
-            LOAD_SENSOR_SCL_L,
-            LOAD_SENSOR_SDA_L,
-            GAIN_FACTOR_128,
-            0,
-            1.f,
-            false
-        }
-    },
-    LOAD_SENSOR,
-    LOAD_SENSOR_L_ID,
-    false,
-    LOAD_SENSOR_L_JACK_DETECT_PIN
+SonarPIOWrapper PIO_WRAPPER = {
+    .mPIO = pio0,
+    .mInitialized = false
 };
 
-Sensor LOAD_SENSOR_R_HW = {
+Sensor SONAR_SENSOR_L_HW = {
     {
-        .mHX711 = {
-            LOAD_SENSOR_SCL_R,
-            LOAD_SENSOR_SDA_R,
-            GAIN_FACTOR_128,
-            0,
-            1.f,
-            false
+        .mSonarSensor = {
+            .mTXPin = SONAR_SENSOR_TX_L,
+            .mRXPin = SONAR_SENSOR_RX_L,
+            .mBaudrate = SONAR_SENSOR_BAUDRATE,
+            .mStateMachineID = 0,
+            .mPIOWrapper = &PIO_WRAPPER
         }
     },
-    LOAD_SENSOR,
-    LOAD_SENSOR_R_ID,
+
+    SONAR_SENSOR,
+    SONAR_SENSOR_L_ID,
     false,
-    LOAD_SENSOR_R_JACK_DETECT_PIN
+    SONAR_SENSOR_L_JACK_DETECT_PIN
+};
+
+Sensor SONAR_SENSOR_R_HW = {
+    {
+        .mSonarSensor = {
+            .mTXPin = SONAR_SENSOR_TX_R,
+            .mRXPin = SONAR_SENSOR_RX_R,
+            .mBaudrate = SONAR_SENSOR_BAUDRATE,
+            .mStateMachineID = 1,
+            .mPIOWrapper = &PIO_WRAPPER
+        }
+    },
+
+    SONAR_SENSOR,
+    SONAR_SENSOR_R_ID,
+    false,
+    SONAR_SENSOR_R_JACK_DETECT_PIN
 };
 
 Sensor TEMP_SENSOR_L_HW = {
@@ -64,7 +69,7 @@ Sensor MOISTURE_SENSOR_L_HW = {
     {
         .mMoistureSensor = {
             SENSOR_I2C, 
-            SOIL_SENSOR_1_ADDRESS
+            SOIL_SENSOR_3_ADDRESS
         }
     },
     MOISTURE_SENSOR,
@@ -77,7 +82,7 @@ Sensor MOISTURE_SENSOR_R_HW = {
     {
         .mMoistureSensor = {
             SENSOR_I2C, 
-            SOIL_SENSOR_1_ADDRESS
+            SOIL_SENSOR_3_ADDRESS
         }
     },
     MOISTURE_SENSOR,
@@ -89,8 +94,8 @@ Sensor MOISTURE_SENSOR_R_HW = {
 
 // Our list of actual sensor hardware
 Sensor* _sensorsList[NUM_SENSORS] = {
-    &LOAD_SENSOR_L_HW,
-    &LOAD_SENSOR_R_HW,
+    &SONAR_SENSOR_L_HW,
+    &SONAR_SENSOR_R_HW,
     &TEMP_SENSOR_L_HW,
     &TEMP_SENSOR_R_HW,
     &MOISTURE_SENSOR_L_HW,
@@ -102,6 +107,13 @@ Sensor* _sensorsList[NUM_SENSORS] = {
                         ///////////////////////////////////////////////////////
 
 // Static reading definitions
+MsgPackSensorReadingDescription MPACK_SONAR_READING_DESCRIPTION = {
+    "Sonar feed level (mm)",                // mReadingName
+    INT_READING,                            // mType   
+    {.mIntValue=30},                        // mMinValue
+    {.mIntValue=1000}                       // mMaxValue
+};
+
 MsgPackSensorReadingDescription MPACK_TEMPERATURE_READING_DESCRIPTION = {
     "Temperature (C)",                      // mReadingName
     FLOAT_READING,                          // mType   
@@ -123,15 +135,22 @@ MsgPackSensorReadingDescription MPACK_SOIL_MOISTURE_READING_DESCRIPTION = {
     {.mIntValue=500}                        // mMaxValue
 };
 
-MsgPackSensorReadingDescription MPACK_WEIGHT_READING_DESCRIPTION = {
-    "Weight (kg)",                          // mReadingName
-    FLOAT_READING,                          // mType   
-    {.mFloatValue=0.0f},                    // mMinValue
-    {.mFloatValue=20.0f}                    // mMaxValue
-};
-
 
 // Reading output objects
+MsgPackSensorReading MPACK_SONAR_SENSOR_L_READINGS[] = {
+    {
+        &MPACK_SONAR_READING_DESCRIPTION,
+        {.mIntValue=0}
+    }    
+};
+
+MsgPackSensorReading MPACK_SONAR_SENSOR_R_READINGS[] = {
+    {
+        &MPACK_SONAR_READING_DESCRIPTION,
+        {.mIntValue=0}
+    }    
+};
+
 MsgPackSensorReading MPACK_MOISTURE_SENSOR_L_READINGS[] = {
     {
         &MPACK_SOIL_MOISTURE_READING_DESCRIPTION,
@@ -168,23 +187,36 @@ MsgPackSensorReading MPACK_DHT22_SENSOR_R_READINGS[] = {
     }
 };
 
-MsgPackSensorReading MPACK_WEIGHT_SENSOR_L_READINGS[] = {
-    {
-        &MPACK_WEIGHT_READING_DESCRIPTION,
-        {.mFloatValue=0.f}
-    }
-};
-
-MsgPackSensorReading MPACK_WEIGHT_SENSOR_R_READINGS[] = {
-    {
-        &MPACK_WEIGHT_READING_DESCRIPTION,
-        {.mFloatValue=0.f}
-    }
-};
-
                         /////////////////////////////////////////////////
                         // Sensor data wrappers for connected hardware //
                         /////////////////////////////////////////////////
+MsgPackSensorData MPACK_SONAR_SENSOR_L = {
+    SONAR_SENSOR_L_ID,                      // mSensorID
+    "Mother feed level sensor",             // mSensorName
+    DISCONNECTED,                           // mSensorStatus
+    {                                       // mCalibration
+        false,                              // mIsCalibratable
+        FLOAT_READING,                      // mCalibrationValueType
+        {.mFloatValue=0.f},                 // mCalibrationRangeMin
+        {.mFloatValue=50.f}                 // mCalibrationRangeMax
+    },
+    1,                                      // mNumReadings
+    MPACK_SONAR_SENSOR_L_READINGS           // Each individual sensor reading
+};
+
+MsgPackSensorData MPACK_SONAR_SENSOR_R = {
+    SONAR_SENSOR_R_ID,                      // mSensorID
+    "Harvest feed level sensor",            // mSensorName
+    DISCONNECTED,                           // mSensorStatus
+    {                                       // mCalibration
+        false,                              // mIsCalibratable
+        FLOAT_READING,                      // mCalibrationValueType
+        {.mFloatValue=0.f},                 // mCalibrationRangeMin
+        {.mFloatValue=50.f}                 // mCalibrationRangeMax
+    },
+    1,                                      // mNumReadings
+    MPACK_SONAR_SENSOR_R_READINGS           // Each individual sensor reading
+};
 
 MsgPackSensorData MPACK_MOISTURE_SENSOR_L = {
     MOISTURE_SENSOR_L_ID,                   // mSensorID
@@ -242,39 +274,11 @@ MsgPackSensorData MPACK_DHT22_SENSOR_R = {
     MPACK_DHT22_SENSOR_R_READINGS           // mReadingDetails
 };
 
-MsgPackSensorData MPACK_WEIGHT_SENSOR_L = {
-    LOAD_SENSOR_L_ID,                       // mSensorID
-    "Left weight sensor",                   // mSensorName
-    DISCONNECTED,                           // mSensorStatus
-    {                                       // mCalibration
-        true,                               // mIsCalibratable
-        FLOAT_READING,                      // mCalibrationValueType
-        {.mFloatValue=0.f},                 // mCalibrationRangeMin
-        {.mFloatValue=50.f}                 // mCalibrationRangeMax
-    },
-    1,                                      // mNumReadings
-    MPACK_WEIGHT_SENSOR_L_READINGS          // mReadingDetails
-};
-
-MsgPackSensorData MPACK_WEIGHT_SENSOR_R = {
-    LOAD_SENSOR_R_ID,                       // mSensorID
-    "Right weight sensor",                  // mSensorName
-    DISCONNECTED,                           // mSensorStatus
-    {                                       // mCalibration
-        true,                               // mIsCalibratable
-        FLOAT_READING,                      // mCalibrationValueType
-        {.mFloatValue=0.f},                 // mCalibrationRangeMin
-        {.mFloatValue=50.f}                 // mCalibrationRangeMax
-    },
-    1,                                      // mNumReadings
-    MPACK_WEIGHT_SENSOR_R_READINGS          // mReadingDetails
-};
-
 
 // Container for the fake sensors/descriptions
 MsgPackSensorData * SENSOR_MSGPACK[NUM_SENSORS] = {
-    &MPACK_WEIGHT_SENSOR_L,
-    &MPACK_WEIGHT_SENSOR_R,
+    &MPACK_SONAR_SENSOR_L,
+    &MPACK_SONAR_SENSOR_R,
     &MPACK_MOISTURE_SENSOR_L,
     &MPACK_MOISTURE_SENSOR_R,
     &MPACK_DHT22_SENSOR_L,

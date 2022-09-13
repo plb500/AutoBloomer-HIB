@@ -15,6 +15,8 @@ typedef struct {
     uint mAddress;
 } StemmaSoilSensor;
 
+#define STEMMA_SOIL_SENSOR_INVALID_READING      (65535)
+
 void init_sensor_bus(i2c_inst_t *i2c, const int baud, const int sdaPin, const int sclPin);
 bool soil_sensor_begin(StemmaSoilSensor *soilSensor);
 bool reset_soil_sensor(StemmaSoilSensor *soilSensor);

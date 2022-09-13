@@ -12,3 +12,5 @@
 *.vsix
 
 build/
+
+.DS_Store

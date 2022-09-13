@@ -94,9 +94,9 @@ bool convert_sensor_data(
 
     // Next set the actual readings
     switch(foundData->mType) {
-        case LOAD_SENSOR:
-            msgPackSensorData->mSensorReadings[LOAD_SENSOR_READING_INDEX].mValue.mFloatValue = foundData->mSensorReading.mLoadSensorWeight;
-            break;
+        // case LOAD_SENSOR:
+        //     msgPackSensorData->mSensorReadings[LOAD_SENSOR_READING_INDEX].mValue.mFloatValue = foundData->mSensorReading.mLoadSensorWeight;
+        //     break;
 
         case MOISTURE_SENSOR:
             msgPackSensorData->mSensorReadings[MOISTURE_SENSOR_READING_INDEX].mValue.mIntValue = foundData->mSensorReading.mMoistureSensorValue;
@@ -161,10 +161,10 @@ void handle_calibrate_sensor_command(Sensor** sensors, int numSensors, uint8_t *
     }
 
     switch(calibrationSensor->mSensorType) {
-        case LOAD_SENSOR:
-            DEBUG_PRINT("Calibrating load sensor %d with value %f\n", calibration.mSensorID, calibration.mCalibrationValue.mFloatValue);
-            calibrate_to_value(&calibrationSensor->mSensor.mHX711, 10, calibration.mCalibrationValue.mFloatValue);
-            break;
+        // case LOAD_SENSOR:
+        //     DEBUG_PRINT("Calibrating load sensor %d with value %f\n", calibration.mSensorID, calibration.mCalibrationValue.mFloatValue);
+        //     calibrate_hx711_sensor_to_value(&calibrationSensor->mSensor.mHX711, calibration.mCalibrationValue.mFloatValue);
+        //     break;
         case TEMP_HUMIDITY_SENSOR:
         case MOISTURE_SENSOR:
         default:
@@ -377,11 +377,19 @@ bool update_sensor_controller(
     }
 
     // Ready incoming bytes and handle responses if appropriate
-    while (uart_is_readable(controllerInterface->mUART)) {
-        handle_incoming_byte(controllerInterface, uart_getc(controllerInterface->mUART));
+    // Loop until we run out of data or hit a complete command. This stops us just looping forever in this function
+    // if the remote end is flooding us with data
+    bool loopControl = true;
+    while (loopControl) {
+        if(uart_is_readable(controllerInterface->mUART)) {
+            handle_incoming_byte(controllerInterface, uart_getc(controllerInterface->mUART));
+        } else {
+            loopControl = false;
+        }
 
         switch(controllerInterface->mCommandBufferState) {
             case AWAITING_DATA:
+                break;
             case PROCESSING_COMMAND_DATA:
                 break;
             case HAS_COMPLETE_COMMAND:
@@ -392,9 +400,11 @@ bool update_sensor_controller(
                     numSensors
                 );
                 reset_controller_interface(controllerInterface, false);            
+                loopControl = false;
                 break;
             case HAS_INVALID_COMMAND_DATA:
                 reset_controller_interface(controllerInterface, false);            
+                loopControl = false;
                 break;
             default:
                 break;

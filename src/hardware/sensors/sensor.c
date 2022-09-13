@@ -21,8 +21,8 @@ bool initialize_sensor_hardware(Sensor *sensor) {
     // Initialize underlying sensor hardware
     if(is_sensor_connected(sensor)) {
         switch(sensor->mSensorType) {
-            case LOAD_SENSOR:
-                hx711_init(&sensor->mSensor.mHX711);
+            case SONAR_SENSOR:
+                initialize_sonar_sensor(&sensor->mSensor.mSonarSensor);
                 initialized = true;
                 break;
                 
@@ -68,8 +68,18 @@ void debug_sensors(Sensor **sensors, SensorData *dataStorage, uint8_t numSensors
             DEBUG_PRINT("    - CONNECTED -- ");
 
             switch(sensor->mSensorType) {
-                case LOAD_SENSOR:
-                    DEBUG_PRINT("%fkg\n", sensorData->mSensorReading.mLoadSensorWeight);
+                case SONAR_SENSOR:
+                    switch(sensor->mSensor.mSonarSensor.mState) {
+                        case AWAITING_SONAR_DATA:
+                            DEBUG_PRINT("Awaiting sonar data\n");
+                            break;
+                        case VALID_SONAR_DATA:
+                            DEBUG_PRINT("%dmm\n", sensorData->mSensorReading.mSonarSensorDistance);
+                            break;
+                        case INVALID_SONAR_CHECKSUM:
+                            DEBUG_PRINT("Invalid checksum\n");
+                            break;
+                    }
                     break;
                 case TEMP_HUMIDITY_SENSOR:
                     if(sensorData->mSensorReading.mTempHumidityData.mReadingError == NO_ERROR) {
@@ -97,6 +107,7 @@ void debug_sensors(Sensor **sensors, SensorData *dataStorage, uint8_t numSensors
 
 void update_sensor_readings(Sensor **sensors, SensorData *dataStorage, uint8_t numSensors) {
     memset(dataStorage, 0, sizeof(SensorData) * numSensors);
+    float val;
 
     for(int i = 0; i < numSensors; ++i) {
         Sensor *sensor = sensors[i];
@@ -122,10 +133,14 @@ void update_sensor_readings(Sensor **sensors, SensorData *dataStorage, uint8_t n
             }
 
             switch(sensor->mSensorType) {
-                case LOAD_SENSOR:
-                    sensorData->mSensorReading.mLoadSensorWeight = hx711_get_units(&sensor->mSensor.mHX711, 10);
-                    sensorData->mIsSensorReadingValid = true;
-                    DEBUG_PRINT("%fkg\n", sensorData->mSensorReading.mLoadSensorWeight);
+                case SONAR_SENSOR:
+                    update_sonar_sensor(&sensor->mSensor.mSonarSensor);
+                    if(sensor->mSensor.mSonarSensor.mState == VALID_SONAR_DATA) {
+                        sensorData->mSensorReading.mSonarSensorDistance = sensor->mSensor.mSonarSensor.mCurrentDistance;
+                        sensorData->mIsSensorReadingValid = true;
+                    } else {
+                        sensorData->mIsSensorReadingValid = false;
+                    }
                     break;
 
                 case TEMP_HUMIDITY_SENSOR:
@@ -153,4 +168,6 @@ void update_sensor_readings(Sensor **sensors, SensorData *dataStorage, uint8_t n
             sensorData->mIsSensorConnected = false;
         }
     }
+
+    debug_sensors(sensors, dataStorage, numSensors);
 }
