@@ -94,9 +94,9 @@ bool convert_sensor_data(
 
     // Next set the actual readings
     switch(foundData->mType) {
-        // case LOAD_SENSOR:
-        //     msgPackSensorData->mSensorReadings[LOAD_SENSOR_READING_INDEX].mValue.mFloatValue = foundData->mSensorReading.mLoadSensorWeight;
-        //     break;
+        case SONAR_SENSOR:
+            msgPackSensorData->mSensorReadings[SONAR_SENSOR_READING_INDEX].mValue.mIntValue = foundData->mSensorReading.mSonarSensorDistance;
+            break;
 
         case MOISTURE_SENSOR:
             msgPackSensorData->mSensorReadings[MOISTURE_SENSOR_READING_INDEX].mValue.mIntValue = foundData->mSensorReading.mMoistureSensorValue;

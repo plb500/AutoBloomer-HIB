@@ -75,7 +75,7 @@ typedef enum {
 } MsgPackReadingType;
 
 typedef enum {
-    LOAD_SENSOR_READING_INDEX           = 0,
+    SONAR_SENSOR_READING_INDEX          = 0,
     MOISTURE_SENSOR_READING_INDEX       = 0,
     DHT22_TEMPERATURE_READING_INDEX     = 0,
     DHT22_HUMIDITY_READING_INDEX        = 1
