@@ -10,6 +10,7 @@ void initialize_sonar_pio(SonarPIOWrapper* pioWrapper) {
 void initialize_sonar_sensor(SonarSensor *sensor) {
     if(!sensor->mPIOWrapper->mInitialized) {
         initialize_sonar_pio(sensor->mPIOWrapper);
+        sensor->mPIOWrapper->mInitialized = true;
     }
 
     // Set sonar pin high to generate processed value

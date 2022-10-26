@@ -19,7 +19,8 @@ Sensor SONAR_SENSOR_L_HW = {
     SONAR_SENSOR,
     SONAR_SENSOR_L_ID,
     false,
-    SONAR_SENSOR_L_JACK_DETECT_PIN
+    SONAR_SENSOR_L_JACK_DETECT_PIN,
+    SONAR_SENSOR_L_ACTIVE_LED
 };
 
 Sensor SONAR_SENSOR_R_HW = {
@@ -36,7 +37,8 @@ Sensor SONAR_SENSOR_R_HW = {
     SONAR_SENSOR,
     SONAR_SENSOR_R_ID,
     false,
-    SONAR_SENSOR_R_JACK_DETECT_PIN
+    SONAR_SENSOR_R_JACK_DETECT_PIN,
+    SONAR_SENSOR_R_ACTIVE_LED
 };
 
 Sensor TEMP_SENSOR_L_HW = {
@@ -49,7 +51,8 @@ Sensor TEMP_SENSOR_L_HW = {
     TEMP_HUMIDITY_SENSOR,
     TEMP_SENSOR_L_ID,
     false,
-    TEMP_SENSOR_L_JACK_DETECT_PIN
+    TEMP_SENSOR_L_JACK_DETECT_PIN,
+    TEMP_SENSOR_L_ACTIVE_LED
 };
 
 Sensor TEMP_SENSOR_R_HW = {
@@ -62,7 +65,8 @@ Sensor TEMP_SENSOR_R_HW = {
     TEMP_HUMIDITY_SENSOR,
     TEMP_SENSOR_R_ID,
     false,
-    TEMP_SENSOR_R_JACK_DETECT_PIN
+    TEMP_SENSOR_R_JACK_DETECT_PIN,
+    TEMP_SENSOR_R_ACTIVE_LED
 };
 
 Sensor MOISTURE_SENSOR_L_HW = {
@@ -75,7 +79,8 @@ Sensor MOISTURE_SENSOR_L_HW = {
     MOISTURE_SENSOR,
     MOISTURE_SENSOR_L_ID,
     false,
-    MOISTURE_SENSOR_L_JACK_DETECT_PIN
+    MOISTURE_SENSOR_L_JACK_DETECT_PIN,
+    MOISTURE_SENSOR_L_ACTIVE_LED
 };
 
 Sensor MOISTURE_SENSOR_R_HW = {
@@ -88,7 +93,8 @@ Sensor MOISTURE_SENSOR_R_HW = {
     MOISTURE_SENSOR,
     MOISTURE_SENSOR_R_ID,
     false,
-    MOISTURE_SENSOR_R_JACK_DETECT_PIN
+    MOISTURE_SENSOR_R_JACK_DETECT_PIN,
+    MOISTURE_SENSOR_R_ACTIVE_LED
 };
 
 
@@ -108,13 +114,15 @@ Sensor* _sensorsList[NUM_SENSORS] = {
 
 // Static reading definitions
 MsgPackSensorReadingDescription MPACK_SONAR_READING_DESCRIPTION = {
-    "Sonar feed level (mm)",                // mReadingName
+    0,                                      // mReadingID
+    "Distance (mm)",                        // mReadingName
     INT_READING,                            // mType   
     {.mIntValue=30},                        // mMinValue
-    {.mIntValue=1000}                       // mMaxValue
+    {.mIntValue=4500}                       // mMaxValue
 };
 
 MsgPackSensorReadingDescription MPACK_TEMPERATURE_READING_DESCRIPTION = {
+    0,                                      // mReadingID
     "Temperature (C)",                      // mReadingName
     FLOAT_READING,                          // mType   
     {.mFloatValue=10.0f},                   // mMinValue
@@ -122,6 +130,7 @@ MsgPackSensorReadingDescription MPACK_TEMPERATURE_READING_DESCRIPTION = {
 };
 
 MsgPackSensorReadingDescription MPACK_HUMIDITY_READING_DESCRIPTION = {
+    1,                                      // mReadingID
     "RH (%)",                               // mReadingName
     FLOAT_READING,                          // mType   
     {.mFloatValue=0.0f},                    // mMinValue
@@ -129,7 +138,8 @@ MsgPackSensorReadingDescription MPACK_HUMIDITY_READING_DESCRIPTION = {
 };
 
 MsgPackSensorReadingDescription MPACK_SOIL_MOISTURE_READING_DESCRIPTION = {
-    "Moisture level",                       // mReadingName,
+    0,
+    "Moisture level",                       // mReadingName
     INT_READING,                            // mType   
     {.mIntValue=0},                         // mMinValue
     {.mIntValue=500}                        // mMaxValue
@@ -192,7 +202,7 @@ MsgPackSensorReading MPACK_DHT22_SENSOR_R_READINGS[] = {
                         /////////////////////////////////////////////////
 MsgPackSensorData MPACK_SONAR_SENSOR_L = {
     SONAR_SENSOR_L_ID,                      // mSensorID
-    "Mother feed level sensor",             // mSensorName
+    "Sonar Sensor L",                       // mSensorName
     DISCONNECTED,                           // mSensorStatus
     {                                       // mCalibration
         false,                              // mIsCalibratable
@@ -206,7 +216,7 @@ MsgPackSensorData MPACK_SONAR_SENSOR_L = {
 
 MsgPackSensorData MPACK_SONAR_SENSOR_R = {
     SONAR_SENSOR_R_ID,                      // mSensorID
-    "Harvest feed level sensor",            // mSensorName
+    "Sonar Sensor R",                       // mSensorName
     DISCONNECTED,                           // mSensorStatus
     {                                       // mCalibration
         false,                              // mIsCalibratable
@@ -220,7 +230,7 @@ MsgPackSensorData MPACK_SONAR_SENSOR_R = {
 
 MsgPackSensorData MPACK_MOISTURE_SENSOR_L = {
     MOISTURE_SENSOR_L_ID,                   // mSensorID
-    "Mother moisture sensor",               // mSensorName
+    "Moisture Sensor L",                    // mSensorName
     DISCONNECTED,                           // mSensorStatus
     {                                       // mCalibration
         false,                              // mIsCalibratable
@@ -234,7 +244,7 @@ MsgPackSensorData MPACK_MOISTURE_SENSOR_L = {
 
 MsgPackSensorData MPACK_MOISTURE_SENSOR_R = {
     MOISTURE_SENSOR_R_ID,                   // mSensorID
-    "Right moisture sensor",                // mSensorName
+    "Moisture Sensor R",                    // mSensorName
     DISCONNECTED,                           // mSensorStatus
     {                                       // mCalibration
         false,                              // mIsCalibratable
@@ -248,7 +258,7 @@ MsgPackSensorData MPACK_MOISTURE_SENSOR_R = {
 
 MsgPackSensorData MPACK_DHT22_SENSOR_L = {
     TEMP_SENSOR_L_ID,                       // mSensorID
-    "Left DHT22 Temp/Humidity sensor",      // mSensorName
+    "Temp/Humidity Sensor L",               // mSensorName
     DISCONNECTED,                           // mSensorStatus
     {                                       // mCalibration
         false,                              // mIsCalibratable
@@ -262,7 +272,7 @@ MsgPackSensorData MPACK_DHT22_SENSOR_L = {
 
 MsgPackSensorData MPACK_DHT22_SENSOR_R = {
     TEMP_SENSOR_R_ID,                       // mSensorID
-    "Right DHT22 Temp/Humidity sensor",     // mSensorName
+    "Temp/Humidity Sensor R",               // mSensorName
     DISCONNECTED,                           // mSensorStatus
     {                                       // mCalibration
         false,                              // mIsCalibratable

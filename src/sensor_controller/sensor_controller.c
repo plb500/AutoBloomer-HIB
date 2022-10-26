@@ -44,7 +44,7 @@ void write_msgpack_bytes(
     size_t numBytes
 ) {
     uart_write_blocking(controllerInterface->mUART, controllerInterface->mMsgPackOutputBuffer, numBytes);
-    uart_tx_wait_blocking(controllerInterface->mUART);
+    // uart_tx_wait_blocking(controllerInterface->mUART);
 }
 
 // Resets the interface back to an initial state

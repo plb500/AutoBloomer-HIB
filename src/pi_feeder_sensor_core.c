@@ -6,6 +6,7 @@
 #include "pico/multicore.h"
 #include "hardware/flash.h"
 #include "hardware/push_button.h"
+#include "hardware/led_shifter.h"
 #include "sensor_controller/sensor_controller.h"
 #include "sensor_definitions.h"
 #include "debug_io.h"
@@ -22,35 +23,21 @@ ControllerInterface _sensorControllerInterface = {
 // Current sensor data
 SensorData _currentSensorData[NUM_SENSORS];
 
-// LED Display buttons
-LEDController _ledControllers[NUM_SENSORS] = {
-    {
-        SONAR_SENSOR_L_ACTIVE_LED,
-    },
-    {
-        SONAR_SENSOR_R_ACTIVE_LED,
-    },
-    {
-        TEMP_SENSOR_L_ACTIVE_LED,
-    },
-    {
-        TEMP_SENSOR_R_ACTIVE_LED,
-    },
-    {
-        MOISTURE_SENSOR_L_ACTIVE_LED,
-    },
-    {
-        MOISTURE_SENSOR_R_ACTIVE_LED,
-    }
+// Connection LED controller
+LEDShifter _ledShifter = {
+    .mDataPin = SENSOR_CONNECT_LED_SHIFTER_DATA_PIN,
+    .mLatchPin = SENSOR_CONNECT_LED_SHIFTER_LATCH_PIN,
+    .mClockPin = SENSOR_CONNECT_LED_SHIFTER_CLOCK_PIN
 };
 
 const uint ONBOARD_LED_PIN = 25;
 
-void update_sensor_status_indicators(LEDController *ledControllers, SensorData *sensorData, uint8_t numSensors) {
+
+void update_sensor_status_indicators(LEDShifter *ledShifter, SensorData *sensorData, Sensor** sensors, uint8_t numSensors) {
     for(int i = 0; i < numSensors; ++i) {
-        ledControllers[i].mState = sensorData[i].mIsSensorReadingValid;
-        update_led_controller(&ledControllers[i]);
+        set_led_state(ledShifter, sensors[i]->mSensorConnectLEDPosition, sensorData[i].mIsSensorReadingValid);
     }
+    output_led_shifter_state(ledShifter);
 }
 
 
@@ -61,7 +48,7 @@ int main() {
     // Turn on onboard LED
     gpio_init(ONBOARD_LED_PIN);
     gpio_set_dir(ONBOARD_LED_PIN, GPIO_OUT);
-    gpio_put(ONBOARD_LED_PIN, 1);
+    gpio_put(ONBOARD_LED_PIN, 0);
 
     // Initialize sensors
     initialize_sensors(
@@ -74,10 +61,8 @@ int main() {
     );
 
     // Initialize LEDs
-    for(int i = 0; i < NUM_SENSORS; ++i) {
-        initialize_led_controller(&_ledControllers[i], false);
-    }
-
+    initialize_led_shifter(&_ledShifter);
+    
     // Initialise Controller comms
     init_sensor_controller(&_sensorControllerInterface, SENSOR_CONTROLLER_TX, SENSOR_CONTROLLER_RX, SENSOR_CONTROLLER_BAUDRATE);
     DEBUG_PRINT("Sensor controller serial initialized\n");
@@ -97,14 +82,16 @@ int main() {
 
         // Handle serial controller I/O
         DEBUG_PRINT("Update serial\n");
+        gpio_put(ONBOARD_LED_PIN, 1);
         update_sensor_controller(&_sensorControllerInterface, _sensorsList, _currentSensorData, NUM_SENSORS);
+        gpio_put(ONBOARD_LED_PIN, 0);
 
 
                 // Update physical output
 
         // Update sensor LED indicators
         DEBUG_PRINT("Update LED\n");
-        update_sensor_status_indicators(_ledControllers, _currentSensorData, NUM_SENSORS);
+        update_sensor_status_indicators(&_ledShifter, _currentSensorData, _sensorsList, NUM_SENSORS);
 
         // Chill
         sleep_ms(1);

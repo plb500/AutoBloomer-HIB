@@ -91,6 +91,7 @@ typedef union {
 
 // Description of the sensor reading output (metadata - not an actual reading)
 typedef struct {
+    const uint8_t mReadingID;               // Reading identifier
     const char *mReadingName;               // Name of reading
     MsgPackReadingType mType;               // The type of reading this sensor provides (i.e. int, float)
     MsgPackReadingValue mMinValue;          // Minimum value in the range of readings for this sensor

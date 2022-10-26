@@ -1,7 +1,6 @@
 #ifndef SENSOR_H
 #define SENSOR_H
 
-#include "hardware/led_controller.h"
 #include "hardware/sensors/dht_sensor.h"
 #include "hardware/sensors/stemma_soil_sensor.h"
 #include "hardware/sensors/sonar_sensor.h"
@@ -39,6 +38,7 @@ typedef struct {
     uint8_t             mSensorID;
     bool                mHardwareInitialized;
     uint8_t             mJackDetectPin;
+    uint8_t             mSensorConnectLEDPosition;
 } Sensor;
 
 // Max reading values

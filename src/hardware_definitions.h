@@ -8,13 +8,13 @@
 
 // Sensor status LED pins
 typedef enum {
-    SONAR_SENSOR_R_ACTIVE_LED       = 21,
-    SONAR_SENSOR_L_ACTIVE_LED       = 16,
-    TEMP_SENSOR_R_ACTIVE_LED        = 19,
-    TEMP_SENSOR_L_ACTIVE_LED        = 18,
-    MOISTURE_SENSOR_R_ACTIVE_LED    = 20,
-    MOISTURE_SENSOR_L_ACTIVE_LED    = 17
-} SensorActiveLEDPins;
+    SONAR_SENSOR_L_ACTIVE_LED       = 4,
+    SONAR_SENSOR_R_ACTIVE_LED       = 1,
+    TEMP_SENSOR_L_ACTIVE_LED        = 5,
+    TEMP_SENSOR_R_ACTIVE_LED        = 2,
+    MOISTURE_SENSOR_L_ACTIVE_LED    = 3,
+    MOISTURE_SENSOR_R_ACTIVE_LED    = 0
+} SensorActiveLEDPositions;
 
 // Sensor connection detection pins
 typedef enum {
@@ -28,6 +28,10 @@ typedef enum {
     MOISTURE_SENSOR_R_JACK_DETECT_PIN   = 3
 } SensorActiveJackDetectPins;
 
+// Sensor connection LED shifter pins
+static const uint8_t SENSOR_CONNECT_LED_SHIFTER_DATA_PIN    = 18;
+static const uint8_t SENSOR_CONNECT_LED_SHIFTER_LATCH_PIN   = 17;
+static const uint8_t SENSOR_CONNECT_LED_SHIFTER_CLOCK_PIN   = 16;       
 
 // Soil moisture sensor pins (I2C-1)
 #define SENSOR_I2C                                      (i2c1)

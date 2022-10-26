@@ -9,7 +9,7 @@ add_executable(PiFeederSensors
     src/sensor_definitions.c
     src/mpack/mpack.c
     src/hardware/push_button.c
-    src/hardware/led_controller.c
+    src/hardware/led_shifter.c
     src/hardware/sensors/sensor.c
     src/hardware/sensors/dht_sensor.c
     src/hardware/sensors/stemma_soil_sensor.c

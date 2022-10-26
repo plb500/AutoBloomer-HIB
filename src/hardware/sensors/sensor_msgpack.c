@@ -17,6 +17,7 @@ const char *TERMINATOR_CODE = "terminator_code";
 
 // Reading description keys
 const char *READING_DESCRIPTION_KEY = "reading_description";
+const char *READING_DESCRIPTION_ID_KEY = "reading_id";
 const char *READING_DESCRIPTION_NAME_KEY = "name";
 const char *READING_DESCRIPTION_MIN_VALUE_KEY = "min_value";
 const char *READING_DESCRIPTION_MAX_VALUE_KEY = "max_value";
@@ -164,7 +165,11 @@ void pack_reading_value(MsgPackReadingType type, MsgPackReadingValue value, mpac
 
 void pack_reading_description(const MsgPackSensorReadingDescription* const description, mpack_writer_t *writer) {
     // Begin
-    mpack_start_map(writer, 4);
+    mpack_start_map(writer, 5);
+
+    // Pack the ID
+    mpack_write_cstr(writer, READING_DESCRIPTION_ID_KEY);
+    mpack_write_u8(writer, description->mReadingID);
 
     // Pack the name
     mpack_write_cstr(writer, READING_DESCRIPTION_NAME_KEY);
