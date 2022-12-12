@@ -73,7 +73,7 @@ typedef enum {
 typedef enum {
     COMMAND_OK                  = 0x00,
     SENSOR_NOT_FOUND            = 0x01,
-
+    HEARTBEAT                   = 0xFE,
     CONTROLLER_READY            = 0xFF
 } CommandResponseCode;
 
@@ -83,6 +83,7 @@ typedef enum {
     HEADER_PACKET               = 0x00,
     SENSOR_DATA_PACKET          = 0x01,
     SENSOR_DESCRIPTION_PACKET   = 0x02,
+    HEARTBEAT_PACKET            = 0xFD,
     CONTROLLER_READY_PACKET     = 0xFE,
     TERMINATOR_PACKET           = 0xFF
 } PacketIdentifier;
@@ -149,6 +150,9 @@ typedef struct {
     int mErrorCode;                         // Any underlying mpack error code returned during packing (0 = no error - see mpack_error_t in mpack.h for more values)
 } PackResponse;
 
+
+// Pack a heartbeat packet
+PackResponse pack_heartbeat_packet(char* outBuf, size_t outBufSize);
 
 // Packs a response indicating sensor controller is now ready for comms
 PackResponse pack_controller_ready_packet(char* outBuf, size_t outBufSize);

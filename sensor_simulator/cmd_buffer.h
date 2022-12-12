@@ -35,7 +35,6 @@ typedef struct {
 // Command buffer functions
 void init_cmd_buffer(CommandBuffer *cb);
 void handle_incoming_byte(CommandBuffer *cb, char in);
-void process_cmd_buffer(CommandBuffer *cb);
 
 
 #ifdef __cplusplus

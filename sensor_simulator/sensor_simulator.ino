@@ -3,11 +3,33 @@
 #include "fake_sensors.h"
 
 const size_t MPACK_OUT_BUFFER_SIZE = 512;
+const unsigned long HEARTBEAT_TIMEOUT = 5000;
 
 CommandBuffer cmdBuffer;
 char mpackBuffer[MPACK_OUT_BUFFER_SIZE];
 
+unsigned long statusLEDOffTime = 0;
+unsigned long nextHeartbeatTime = 0;
 
+
+void send_heartbeat() {
+    PackResponse response;
+
+    // Pack and send the header data
+    response = pack_heartbeat_packet(mpackBuffer, MPACK_OUT_BUFFER_SIZE);
+    if(!response.mErrorCode) {
+        Serial.write(mpackBuffer, response.mBytesUsed);
+    }
+
+    // Pack and send terminator packet
+    response = pack_terminator_packet(HEARTBEAT_PACKET, mpackBuffer, MPACK_OUT_BUFFER_SIZE);
+    if(!response.mErrorCode) {
+        Serial.write(mpackBuffer, response.mBytesUsed);
+    }
+
+    nextHeartbeatTime = (millis() + HEARTBEAT_TIMEOUT);
+}
+    
 void send_controller_ready() {
     PackResponse response;
 
@@ -119,8 +141,6 @@ void setup() {
     send_controller_ready();
 }
 
-unsigned long statusLEDOffTime = 0;
-
 void loop() {
     uint8_t *argumentBytes;
     unsigned long currentTime = millis();
@@ -134,6 +154,10 @@ void loop() {
         digitalWrite(LED_BUILTIN, LOW);
     } else {
         digitalWrite(LED_BUILTIN, HIGH);
+    }
+
+    if(currentTime > nextHeartbeatTime) {
+        send_heartbeat();
     }
 
     switch(cmdBuffer.mCommandBufferState) {

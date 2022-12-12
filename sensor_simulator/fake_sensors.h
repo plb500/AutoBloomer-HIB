@@ -134,7 +134,7 @@ SensorData MOISTURE_SENSOR_R = {
 SensorData DHT22_SENSOR_L = {
     2,                                      // mSensorID
     "Left DHT22 Temp/Humidity sensor",      // mSensorName
-    CONNECTED_WORKING,                      // mSensorStatus
+    CONNECTED_NOT_WORKING,                  // mSensorStatus
     2,                                      // mNumReadings
     DHT22_SENSOR_L_READINGS                 // mReadingDetails
 };
@@ -150,7 +150,7 @@ SensorData DHT22_SENSOR_R = {
 SensorData WEIGHT_SENSOR_L = {
     4,                                      // mSensorID
     "Left weight sensor",                   // mSensorName
-    CONNECTED_WORKING,                      // mSensorStatus
+    DISCONNECTED,                           // mSensorStatus
     1,                                      // mNumReadings
     WEIGHT_SENSOR_L_READINGS                // mReadingDetails
 };
@@ -158,7 +158,7 @@ SensorData WEIGHT_SENSOR_L = {
 SensorData WEIGHT_SENSOR_R = {
     5,                                      // mSensorID
     "Right weight sensor",                  // mSensorName
-    CONNECTED_WORKING,                      // mSensorStatus
+    CONNECTED_NOT_WORKING,                   // mSensorStatus
     1,                                      // mNumReadings
     WEIGHT_SENSOR_R_READINGS                // mReadingDetails
 };
@@ -174,7 +174,7 @@ SensorData BINARY_SENSOR_L = {
 SensorData BINARY_SENSOR_R = {
     7,                                      // mSensorID
     "Right On/Off sensor",                  // mSensorName
-    CONNECTED_WORKING,                      // mSensorStatus
+    DISCONNECTED,                           // mSensorStatus
     1,                                      // mNumReadings
     BINARY_SENSOR_R_READINGS                // mReadingDetails
 };

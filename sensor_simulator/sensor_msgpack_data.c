@@ -27,6 +27,15 @@ const char *SENSOR_DATA_STATUS_KEY = "sensor_status";
 const char *SENSOR_DATA_READINGS_KEY = "sensor_readings";
 
 
+PackResponse pack_heartbeat_packet(char* outBuf, size_t outBufSize) {
+    HeaderPacket controllerReadyHeader = {
+        NO_COMMAND,
+        HEARTBEAT,
+    };
+
+    return pack_header_data(controllerReadyHeader, outBuf, outBufSize);
+}
+
 PackResponse pack_controller_ready_packet(char* outBuf, size_t outBufSize) {
     HeaderPacket controllerReadyHeader = {
         NO_COMMAND,
