@@ -1399,10 +1399,6 @@
              x="185.57806"
              y="137.82471">GND</tspan></text>
       </g>
-      <path
-         style="fill:none;stroke:#ffffff;stroke-width:0.484854;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#DotS);marker-end:url(#DotS)"
-         d="M 76.199995,54.8831 V 20.88458 L 70.741058,15.425643 H 55.341072"
-         id="path2064" />
       <g
          id="g6628"
          transform="matrix(0.48485447,0,0,0.48485447,-41.67872,43.74654)">
@@ -1744,6 +1740,10 @@
          style="fill:none;stroke:#ffffff;stroke-width:0.484854;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#DotS);marker-end:url(#DotS)"
          d="M 59.798223,50.306471 H 46.493831"
          id="path7099" />
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:0.484854;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#DotS);marker-end:url(#DotS)"
+         d="M 76.199995,54.8831 V 20.88458 L 70.741058,15.425643 H 55.341072"
+         id="path2064" />
       <path
          style="fill:none;stroke:#ffffff;stroke-width:0.484854;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#DotS-0);marker-end:url(#DotS-0)"
          d="M 105.90616,50.306476 H 92.601768"
