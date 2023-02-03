@@ -5444,7 +5444,7 @@
     (in_bom yes) (on_board yes) (fields_autoplaced)
     (uuid 400f4f70-20bc-4cf8-874a-a91123f3236d)
     (property "Reference" "J1" (id 0) (at 57.15 34.29 90))
-    (property "Value" "Relay Board" (id 1) (at 57.15 36.83 90))
+    (property "Value" "Relay Board Connector" (id 1) (at 57.15 36.83 90))
     (property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x10_P2.54mm_Vertical" (id 2) (at 55.88 40.64 0)
       (effects (font (size 1.27 1.27)) hide)
     )
@@ -6771,7 +6771,7 @@
       (reference "D2") (unit 1) (value "1N5820") (footprint "Diode_THT:D_DO-201AD_P15.24mm_Horizontal")
     )
     (path "/400f4f70-20bc-4cf8-874a-a91123f3236d"
-      (reference "J1") (unit 1) (value "Relay Board") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x10_P2.54mm_Vertical")
+      (reference "J1") (unit 1) (value "Relay Board Connector") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x10_P2.54mm_Vertical")
     )
     (path "/4bc375fb-4352-4621-9522-ce2db829d67f"
       (reference "J2") (unit 1) (value "Pi 5V") (footprint "Connector_JST:JST_XH_B2B-XH-A_1x02_P2.50mm_Vertical")
