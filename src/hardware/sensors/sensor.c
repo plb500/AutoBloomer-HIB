@@ -12,7 +12,7 @@ void initialize_sensor_jack_detect_pin(uint8_t pin) {
 }
 
 bool is_sensor_connected(Sensor *sensor) {
-    return !gpio_get(sensor->mJackDetectPin);
+    return !gpio_get(sensor->mSensorDefinition.mJackDetectPin);
 }
 
 bool initialize_sensor_hardware(Sensor *sensor) {
@@ -20,21 +20,21 @@ bool initialize_sensor_hardware(Sensor *sensor) {
     
     // Initialize underlying sensor hardware
     if(is_sensor_connected(sensor)) {
-        switch(sensor->mSensorType) {
+        switch(sensor->mSensorDefinition.mSensorType) {
             case SONAR_SENSOR:
-                initialize_sonar_sensor(&sensor->mSensor.mSonarSensor);
+                initialize_sonar_sensor(&sensor->mSensorDefinition.mSensor.mSonarSensor);
                 initialized = true;
                 break;
                 
             case TEMP_HUMIDITY_SENSOR:
-                init_DHT22(&sensor->mSensor.mDHTSensor);
+                init_DHT22(&sensor->mSensorDefinition.mSensor.mDHTSensor);
                 initialized = true;
                 break;
 
             case MOISTURE_SENSOR:
-                initialized = soil_sensor_begin(&sensor->mSensor.mMoistureSensor);
+                initialized = soil_sensor_begin(&sensor->mSensorDefinition.mSensor.mMoistureSensor);
                 if(!initialized) {
-                    DEBUG_PRINT("ERROR INITIALIZING MOISURE SENSOR (%d)!\n", sensor->mSensorID);
+                    DEBUG_PRINT("ERROR INITIALIZING MOISURE SENSOR (%d)!\n", sensor->mSensorDefinition.mSensorID);
                 }
                 break;
         }
@@ -50,26 +50,26 @@ void initialize_sensors(Sensor **sensors, uint8_t numSensors, i2c_inst_t *i2c, c
     // Setup sensors
     for(int i = 0; i < numSensors; ++i) {
         // Initialize jack detect pin
-        initialize_sensor_jack_detect_pin(sensors[i]->mJackDetectPin);
+        initialize_sensor_jack_detect_pin(sensors[i]->mSensorDefinition.mJackDetectPin);
     }
 }
 
-void debug_sensors(Sensor **sensors, SensorData *dataStorage, uint8_t numSensors) {
+void debug_sensors(Sensor **sensors, uint8_t numSensors) {
     DEBUG_PRINT("Sensor Updates\n");
     DEBUG_PRINT("--------------\n");
 
     for(int i = 0; i < numSensors; ++i) {
         Sensor *sensor = sensors[i];
-        SensorData *sensorData = &dataStorage[i];
+        SensorData *sensorData = &sensor->mCurrentSensorData;
 
-        DEBUG_PRINT("  * Sensor %d (type: %d)\n", i, sensor->mSensorType);
+        DEBUG_PRINT("  * Sensor %d (type: %d)\n", i, sensor->mSensorDefinition.mSensorType);
 
         if(is_sensor_connected(sensor)) {
             DEBUG_PRINT("    - CONNECTED -- ");
 
-            switch(sensor->mSensorType) {
+            switch(sensor->mSensorDefinition.mSensorType) {
                 case SONAR_SENSOR:
-                    switch(sensor->mSensor.mSonarSensor.mState) {
+                    switch(sensor->mSensorDefinition.mSensor.mSonarSensor.mState) {
                         case AWAITING_SONAR_DATA:
                             DEBUG_PRINT("Awaiting sonar data\n");
                             break;
@@ -105,20 +105,20 @@ void debug_sensors(Sensor **sensors, SensorData *dataStorage, uint8_t numSensors
     DEBUG_PRINT("\n**************************************\n\n");
 }
 
-void update_sensor_readings(Sensor **sensors, SensorData *dataStorage, uint8_t numSensors) {
-    memset(dataStorage, 0, sizeof(SensorData) * numSensors);
+void update_sensor_readings(Sensor **sensors, uint8_t numSensors) {
     float val;
 
     for(int i = 0; i < numSensors; ++i) {
         Sensor *sensor = sensors[i];
-        SensorData *sensorData = &dataStorage[i];
-        sensorData->mSensorID = sensor->mSensorID;
-        sensorData->mType = sensor->mSensorType;
+        SensorData *sensorData = &sensor->mCurrentSensorData;
+        memset(sensorData, 0, sizeof(SensorData));
+        // sensorData->mSensorID = sensor->mSensorID;
+        // sensorData->mType = sensor->mSensorType;
 
 
         // Check connection
         if(is_sensor_connected(sensor)) {
-            sensorData->mIsSensorConnected = true;
+            // sensorData->mIsSensorConnected = true;
 
             // If the sensor has just been connected, initialize its hardware
             if(!sensor->mHardwareInitialized) {
@@ -128,46 +128,45 @@ void update_sensor_readings(Sensor **sensors, SensorData *dataStorage, uint8_t n
             // If the sensor is still in an invalid hardware state, it's probably non-functional.
             // There is no point in proceeding here.
             if(!sensor->mHardwareInitialized) {
-                sensorData->mIsSensorReadingValid = false;
+                sensorData->mSensorStatus = SENSOR_CONNECTED_MALFUNCTIONING;
                 continue;
             }
 
-            switch(sensor->mSensorType) {
+            switch(sensor->mSensorDefinition.mSensorType) {
                 case SONAR_SENSOR:
-                    update_sonar_sensor(&sensor->mSensor.mSonarSensor);
-                    if(sensor->mSensor.mSonarSensor.mState == VALID_SONAR_DATA) {
-                        sensorData->mSensorReading.mSonarSensorDistance = sensor->mSensor.mSonarSensor.mCurrentDistance;
-                        sensorData->mIsSensorReadingValid = true;
+                    update_sonar_sensor(&sensor->mSensorDefinition.mSensor.mSonarSensor);
+                    if(sensor->mSensorDefinition.mSensor.mSonarSensor.mState == VALID_SONAR_DATA) {
+                        sensorData->mSensorReading.mSonarSensorDistance = sensor->mSensorDefinition.mSensor.mSonarSensor.mCurrentDistance;
+                        sensorData->mSensorStatus = SENSOR_CONNECTED_VALID_DATA;
                     } else {
-                        sensorData->mIsSensorReadingValid = false;
+                        sensorData->mSensorStatus = SENSOR_CONNECTED_MALFUNCTIONING;
                     }
                     break;
 
                 case TEMP_HUMIDITY_SENSOR:
-                    read_DHT22(&sensor->mSensor.mDHTSensor, &sensorData->mSensorReading.mTempHumidityData);
+                    read_DHT22(&sensor->mSensorDefinition.mSensor.mDHTSensor, &sensorData->mSensorReading.mTempHumidityData);
                     if(sensorData->mSensorReading.mTempHumidityData.mReadingError == NO_ERROR) {
-                        sensorData->mIsSensorReadingValid = true;
+                        sensorData->mSensorStatus = SENSOR_CONNECTED_VALID_DATA;
                     } else {
-                        sensorData->mIsSensorReadingValid = false;
+                        sensorData->mSensorStatus = SENSOR_CONNECTED_MALFUNCTIONING;
                     }
                     break;
 
                 case MOISTURE_SENSOR:
-                    sensorData->mSensorReading.mMoistureSensorValue = get_soil_sensor_capacitive_value(&sensor->mSensor.mMoistureSensor);
+                    sensorData->mSensorReading.mMoistureSensorValue = get_soil_sensor_capacitive_value(&sensor->mSensorDefinition.mSensor.mMoistureSensor);
                     if(sensorData->mSensorReading.mMoistureSensorValue != -1) {
-                        sensorData->mIsSensorReadingValid = true;
+                        sensorData->mSensorStatus = SENSOR_CONNECTED_VALID_DATA;
                     } else {
-                        sensorData->mIsSensorReadingValid = false;
+                        sensorData->mSensorStatus = SENSOR_CONNECTED_MALFUNCTIONING;
                     }
                     break;
             }
         } else {
             // Sensor is disconnected, make sure all flags are in the invalid state
             sensor->mHardwareInitialized = false;
-            sensorData->mIsSensorReadingValid = false;
-            sensorData->mIsSensorConnected = false;
+            sensorData->mSensorStatus = SENSOR_DISCONNECTED;
         }
     }
 
-    debug_sensors(sensors, dataStorage, numSensors);
+    debug_sensors(sensors, numSensors);
 }

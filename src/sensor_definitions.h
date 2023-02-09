@@ -27,6 +27,7 @@ extern Sensor MOISTURE_SENSOR_L_HW;
 extern Sensor MOISTURE_SENSOR_R_HW;
 
 // Our list of actual sensor hardware
+extern Sensor maybeList[NUM_SENSORS];
 extern Sensor* _sensorsList[NUM_SENSORS];
 
                         ///////////////////////////////////////////////////////

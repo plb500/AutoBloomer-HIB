@@ -20,9 +20,6 @@ ControllerInterface _sensorControllerInterface = {
     .mNumMsgPackSensors = NUM_SENSORS
 };
 
-// Current sensor data
-SensorData _currentSensorData[NUM_SENSORS];
-
 // Connection LED controller
 LEDShifter _ledShifter = {
     .mDataPin = SENSOR_CONNECT_LED_SHIFTER_DATA_PIN,
@@ -33,9 +30,10 @@ LEDShifter _ledShifter = {
 const uint ONBOARD_LED_PIN = 25;
 
 
-void update_sensor_status_indicators(LEDShifter *ledShifter, SensorData *sensorData, Sensor** sensors, uint8_t numSensors) {
+void update_sensor_status_indicators(LEDShifter *ledShifter, Sensor** sensors, uint8_t numSensors) {
     for(int i = 0; i < numSensors; ++i) {
-        set_led_state(ledShifter, sensors[i]->mSensorConnectLEDPosition, sensorData[i].mIsSensorReadingValid);
+        bool ledOn = (sensors[i]->mCurrentSensorData.mSensorStatus == SENSOR_CONNECTED_VALID_DATA);
+        set_led_state(ledShifter, sensors[i]->mSensorDefinition.mSensorConnectLEDPosition, ledOn);
     }
     output_led_shifter_state(ledShifter);
 }
@@ -75,7 +73,7 @@ int main() {
 
         // Update sensor readings
         DEBUG_PRINT("Update sensors\n");
-        update_sensor_readings(_sensorsList, _currentSensorData, NUM_SENSORS);
+        update_sensor_readings(_sensorsList, NUM_SENSORS);
 
 
                 // Process serial input
@@ -83,7 +81,7 @@ int main() {
         // Handle serial controller I/O
         DEBUG_PRINT("Update serial\n");
         gpio_put(ONBOARD_LED_PIN, 1);
-        update_sensor_controller(&_sensorControllerInterface, _sensorsList, _currentSensorData, NUM_SENSORS);
+        update_sensor_controller(&_sensorControllerInterface, _sensorsList, NUM_SENSORS);
         gpio_put(ONBOARD_LED_PIN, 0);
 
 
@@ -91,7 +89,7 @@ int main() {
 
         // Update sensor LED indicators
         DEBUG_PRINT("Update LED\n");
-        update_sensor_status_indicators(&_ledShifter, _currentSensorData, _sensorsList, NUM_SENSORS);
+        update_sensor_status_indicators(&_ledShifter, _sensorsList, NUM_SENSORS);
 
         // Chill
         sleep_ms(1);

@@ -3,6 +3,7 @@
 
 #include <unistd.h>
 #include <stdbool.h>
+#include "sensor.h"
 #include "sensor_controller/command_definitions.h"
 
 /**

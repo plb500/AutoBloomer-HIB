@@ -18,25 +18,24 @@ void reset_controller_interface(ControllerInterface *controllerInterface, bool r
 void send_heartbeat(ControllerInterface *controllerInterface);
 void handle_incoming_byte(ControllerInterface *controllerInterface, uint8_t b);
 bool convert_sensor_data(
-    SensorData *sensorData,
+    Sensor **sensors,
     uint8_t numSensors,
     MsgPackSensorData *msgPackSensorData
 );
 void handle_sensor_controller_command(
     ControllerInterface *controllerInterface,
-    Sensor **sensor,
-    SensorData *sensorData,
+    Sensor **sensors,
     uint8_t numSensors
 );
 void handle_send_all_sensor_data_command(
     ControllerInterface *controllerInterface,
-    SensorData *sensorData,
+    Sensor **sensors,
     uint8_t numSensors
 );
 void handle_send_sensor_data_command(
     uint8_t sensorID,
     ControllerInterface *controllerInterface,
-    SensorData *sensorData,
+    Sensor **sensors,
     uint8_t numSensors
 );
 void write_msgpack_bytes(
@@ -44,7 +43,6 @@ void write_msgpack_bytes(
     size_t numBytes
 ) {
     uart_write_blocking(controllerInterface->mUART, controllerInterface->mMsgPackOutputBuffer, numBytes);
-    // uart_tx_wait_blocking(controllerInterface->mUART);
 }
 
 // Resets the interface back to an initial state
@@ -63,48 +61,43 @@ void reset_controller_interface(
 
 // Copy data from active sensor structures into outgoing serial message object
 bool convert_sensor_data(
-    SensorData *sensorData,
+    Sensor **sensors,
     uint8_t numSensors,
     MsgPackSensorData *msgPackSensorData
 ) {
-    if(!sensorData || !msgPackSensorData) {
+    if(!sensors || !msgPackSensorData) {
         return false;
     }
 
     // Find the matching sensor data
-    SensorData *foundData = 0;
+    Sensor *sensor = 0;
     for(int i = 0; i < numSensors; ++i) {
-        if(sensorData[i].mSensorID == msgPackSensorData->mSensorID) {
-            foundData = &(sensorData[i]);
+        if(sensors[i]->mSensorDefinition.mSensorID == msgPackSensorData->mSensorID) {
+            sensor = sensors[i];
             break;
         }
     }
 
-    if(!foundData) {
+    if(!sensor) {
         return false;
     }
 
     // First, set the status
-    msgPackSensorData->mStatus = CONNECTED_WORKING;
-    if(!foundData->mIsSensorConnected) {
-        msgPackSensorData->mStatus = DISCONNECTED;
-    } else if(!foundData->mIsSensorReadingValid) {
-        msgPackSensorData->mStatus = CONNECTED_NOT_WORKING;
-    }
+    msgPackSensorData->mStatus = sensor->mCurrentSensorData.mSensorStatus;
 
     // Next set the actual readings
-    switch(foundData->mType) {
+    switch(sensor->mSensorDefinition.mSensorType) {
         case SONAR_SENSOR:
-            msgPackSensorData->mSensorReadings[SONAR_SENSOR_READING_INDEX].mValue.mIntValue = foundData->mSensorReading.mSonarSensorDistance;
+            msgPackSensorData->mSensorReadings[SONAR_SENSOR_READING_INDEX].mValue.mIntValue = sensor->mCurrentSensorData.mSensorReading.mSonarSensorDistance;
             break;
 
         case MOISTURE_SENSOR:
-            msgPackSensorData->mSensorReadings[MOISTURE_SENSOR_READING_INDEX].mValue.mIntValue = foundData->mSensorReading.mMoistureSensorValue;
+            msgPackSensorData->mSensorReadings[MOISTURE_SENSOR_READING_INDEX].mValue.mIntValue = sensor->mCurrentSensorData.mSensorReading.mMoistureSensorValue;
             break;
 
         case TEMP_HUMIDITY_SENSOR:
-            msgPackSensorData->mSensorReadings[DHT22_TEMPERATURE_READING_INDEX].mValue.mFloatValue = foundData->mSensorReading.mTempHumidityData.mTemperatureC;
-            msgPackSensorData->mSensorReadings[DHT22_HUMIDITY_READING_INDEX].mValue.mFloatValue = foundData->mSensorReading.mTempHumidityData.mRelativeHumidity;
+            msgPackSensorData->mSensorReadings[DHT22_TEMPERATURE_READING_INDEX].mValue.mFloatValue = sensor->mCurrentSensorData.mSensorReading.mTempHumidityData.mTemperatureC;
+            msgPackSensorData->mSensorReadings[DHT22_HUMIDITY_READING_INDEX].mValue.mFloatValue = sensor->mCurrentSensorData.mSensorReading.mTempHumidityData.mRelativeHumidity;
             break;
     }
 
@@ -150,7 +143,7 @@ void handle_calibrate_sensor_command(Sensor** sensors, int numSensors, uint8_t *
 
     Sensor *calibrationSensor = 0;
     for(int i = 0; i < numSensors; ++i) {
-        if(sensors[i]->mSensorID == calibration.mSensorID) {
+        if(sensors[i]->mSensorDefinition.mSensorID == calibration.mSensorID) {
             calibrationSensor = sensors[i];
             break;
         }
@@ -160,11 +153,7 @@ void handle_calibrate_sensor_command(Sensor** sensors, int numSensors, uint8_t *
         return;
     }
 
-    switch(calibrationSensor->mSensorType) {
-        // case LOAD_SENSOR:
-        //     DEBUG_PRINT("Calibrating load sensor %d with value %f\n", calibration.mSensorID, calibration.mCalibrationValue.mFloatValue);
-        //     calibrate_hx711_sensor_to_value(&calibrationSensor->mSensor.mHX711, calibration.mCalibrationValue.mFloatValue);
-        //     break;
+    switch(calibrationSensor->mSensorDefinition.mSensorType) {
         case TEMP_HUMIDITY_SENSOR:
         case MOISTURE_SENSOR:
         default:
@@ -193,7 +182,6 @@ void send_heartbeat(ControllerInterface *controllerInterface) {
 void handle_sensor_controller_command(
     ControllerInterface *controllerInterface,
     Sensor **sensors,
-    SensorData *sensorData,
     uint8_t numSensors
 ) {
     uint8_t *argumentBytes = &(controllerInterface->mCommandBuffer[1]);
@@ -204,7 +192,7 @@ void handle_sensor_controller_command(
         case GET_ALL_SENSOR_VALUES:
             handle_send_all_sensor_data_command(
                 controllerInterface,
-                sensorData,
+                sensors,
                 numSensors
             );
             break;
@@ -228,7 +216,7 @@ void handle_sensor_controller_command(
 // Send sensor data from all sensors
 void handle_send_all_sensor_data_command(
     ControllerInterface *controllerInterface,
-    SensorData *sensorData,
+    Sensor **sensors,
     uint8_t numSensors
 ) {
     PackResponse response;
@@ -251,7 +239,7 @@ void handle_send_all_sensor_data_command(
         MsgPackSensorData *m = controllerInterface->mMsgPackSensors[i];
 
         // Convert raw sensor data to msgpack structure
-        if(convert_sensor_data(sensorData, numSensors, m)) {
+        if(convert_sensor_data(sensors, numSensors, m)) {
         // if(true) { 
             response = pack_sensor_data(
                 m,
@@ -276,7 +264,7 @@ void handle_send_all_sensor_data_command(
 void handle_send_sensor_data_command(
     uint8_t sensorID,
     ControllerInterface *controllerInterface,
-    SensorData *sensorData,
+    Sensor **sensors,
     uint8_t numSensors
 ) {
     PackResponse response;
@@ -292,7 +280,7 @@ void handle_send_sensor_data_command(
     
     // Convert the sensor data for transmission
     if(!convert_sensor_data(
-        sensorData,
+        sensors,
         numSensors,
         controllerInterface->mMsgPackSensors[sensorID]
     )) {
@@ -366,7 +354,6 @@ void send_controller_ready(ControllerInterface *controllerInterface) {
 bool update_sensor_controller(
     ControllerInterface *controllerInterface,
     Sensor **sensors,
-    SensorData *sensorData,
     uint8_t numSensors
 ) {
     // Check for heartbeat
@@ -396,7 +383,6 @@ bool update_sensor_controller(
                 handle_sensor_controller_command(
                     controllerInterface,
                     sensors,
-                    sensorData,
                     numSensors
                 );
                 reset_controller_interface(controllerInterface, false);            

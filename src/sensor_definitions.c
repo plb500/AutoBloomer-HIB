@@ -5,96 +5,140 @@ SonarPIOWrapper PIO_WRAPPER = {
     .mInitialized = false
 };
 
-Sensor SONAR_SENSOR_L_HW = {
+Sensor maybeList[NUM_SENSORS] = {
     {
-        .mSonarSensor = {
-            .mTXPin = SONAR_SENSOR_TX_L,
-            .mRXPin = SONAR_SENSOR_RX_L,
-            .mBaudrate = SONAR_SENSOR_BAUDRATE,
-            .mStateMachineID = 0,
-            .mPIOWrapper = &PIO_WRAPPER
+        .mSensorDefinition = {                               
+            .mSensor = {
+                .mSonarSensor = {
+                    .mTXPin = SONAR_SENSOR_TX_L,
+                    .mRXPin = SONAR_SENSOR_RX_L,
+                    .mBaudrate = SONAR_SENSOR_BAUDRATE,
+                    .mStateMachineID = 0,
+                    .mPIOWrapper = &PIO_WRAPPER
+                }
+            },
+            .mSensorType = SONAR_SENSOR,
+            .mSensorID = SONAR_SENSOR_L_ID,
+            .mJackDetectPin = SONAR_SENSOR_L_JACK_DETECT_PIN,
+            .mSensorConnectLEDPosition = SONAR_SENSOR_L_ACTIVE_LED
         }
     },
+    {
+        .mSensorDefinition = {                               
+            .mSensor = {
+                .mSonarSensor = {
+                    .mTXPin = SONAR_SENSOR_TX_R,
+                    .mRXPin = SONAR_SENSOR_RX_R,
+                    .mBaudrate = SONAR_SENSOR_BAUDRATE,
+                    .mStateMachineID = 1,
+                    .mPIOWrapper = &PIO_WRAPPER
+                }
+            },
+            .mSensorType = SONAR_SENSOR,
+            .mSensorID = SONAR_SENSOR_R_ID,
+            .mJackDetectPin = SONAR_SENSOR_R_JACK_DETECT_PIN,
+            .mSensorConnectLEDPosition = SONAR_SENSOR_R_ACTIVE_LED
+        }
+    }
+};
 
-    SONAR_SENSOR,
-    SONAR_SENSOR_L_ID,
-    false,
-    SONAR_SENSOR_L_JACK_DETECT_PIN,
-    SONAR_SENSOR_L_ACTIVE_LED
+
+
+
+Sensor SONAR_SENSOR_L_HW = {
+    .mSensorDefinition = {                               
+        .mSensor = {
+            .mSonarSensor = {
+                .mTXPin = SONAR_SENSOR_TX_L,
+                .mRXPin = SONAR_SENSOR_RX_L,
+                .mBaudrate = SONAR_SENSOR_BAUDRATE,
+                .mStateMachineID = 0,
+                .mPIOWrapper = &PIO_WRAPPER
+            }
+        },
+        .mSensorType = SONAR_SENSOR,
+        .mSensorID = SONAR_SENSOR_L_ID,
+        .mJackDetectPin = SONAR_SENSOR_L_JACK_DETECT_PIN,
+        .mSensorConnectLEDPosition = SONAR_SENSOR_L_ACTIVE_LED
+    }
 };
 
 Sensor SONAR_SENSOR_R_HW = {
-    {
-        .mSonarSensor = {
-            .mTXPin = SONAR_SENSOR_TX_R,
-            .mRXPin = SONAR_SENSOR_RX_R,
-            .mBaudrate = SONAR_SENSOR_BAUDRATE,
-            .mStateMachineID = 1,
-            .mPIOWrapper = &PIO_WRAPPER
-        }
-    },
-
-    SONAR_SENSOR,
-    SONAR_SENSOR_R_ID,
-    false,
-    SONAR_SENSOR_R_JACK_DETECT_PIN,
-    SONAR_SENSOR_R_ACTIVE_LED
+    .mSensorDefinition = {                               
+        .mSensor = {
+            .mSonarSensor = {
+                .mTXPin = SONAR_SENSOR_TX_R,
+                .mRXPin = SONAR_SENSOR_RX_R,
+                .mBaudrate = SONAR_SENSOR_BAUDRATE,
+                .mStateMachineID = 1,
+                .mPIOWrapper = &PIO_WRAPPER
+            }
+        },
+        .mSensorType = SONAR_SENSOR,
+        .mSensorID = SONAR_SENSOR_R_ID,
+        .mJackDetectPin = SONAR_SENSOR_R_JACK_DETECT_PIN,
+        .mSensorConnectLEDPosition = SONAR_SENSOR_R_ACTIVE_LED
+    }
 };
 
 Sensor TEMP_SENSOR_L_HW = {
-    {
-        .mDHTSensor = {
-            TEMP_SENSOR_L_CTL,
-            0
-        }
-    },
-    TEMP_HUMIDITY_SENSOR,
-    TEMP_SENSOR_L_ID,
-    false,
-    TEMP_SENSOR_L_JACK_DETECT_PIN,
-    TEMP_SENSOR_L_ACTIVE_LED
+    .mSensorDefinition = {                               
+        .mSensor = {
+            .mDHTSensor = {
+                TEMP_SENSOR_L_CTL,
+                0
+            }
+        },
+        .mSensorType = TEMP_HUMIDITY_SENSOR,
+        .mSensorID = TEMP_SENSOR_L_ID,
+        .mJackDetectPin = TEMP_SENSOR_L_JACK_DETECT_PIN,
+        .mSensorConnectLEDPosition = TEMP_SENSOR_L_ACTIVE_LED
+    }
 };
 
 Sensor TEMP_SENSOR_R_HW = {
-    {
-        .mDHTSensor = {
-            TEMP_SENSOR_R_CTL,
-            0
-        }
-    },
-    TEMP_HUMIDITY_SENSOR,
-    TEMP_SENSOR_R_ID,
-    false,
-    TEMP_SENSOR_R_JACK_DETECT_PIN,
-    TEMP_SENSOR_R_ACTIVE_LED
+    .mSensorDefinition = {                               
+        .mSensor = {
+            .mDHTSensor = {
+                TEMP_SENSOR_R_CTL,
+                0
+            }
+        },
+        .mSensorType = TEMP_HUMIDITY_SENSOR,
+        .mSensorID = TEMP_SENSOR_R_ID,
+        .mJackDetectPin = TEMP_SENSOR_R_JACK_DETECT_PIN,
+        .mSensorConnectLEDPosition = TEMP_SENSOR_R_ACTIVE_LED
+    }
 };
 
 Sensor MOISTURE_SENSOR_L_HW = {
-    {
-        .mMoistureSensor = {
-            SENSOR_I2C, 
-            SOIL_SENSOR_3_ADDRESS
-        }
-    },
-    MOISTURE_SENSOR,
-    MOISTURE_SENSOR_L_ID,
-    false,
-    MOISTURE_SENSOR_L_JACK_DETECT_PIN,
-    MOISTURE_SENSOR_L_ACTIVE_LED
+    .mSensorDefinition = {                               
+        .mSensor = {
+            .mMoistureSensor = {
+                SENSOR_I2C, 
+                SOIL_SENSOR_3_ADDRESS
+            }
+        },
+        .mSensorType = MOISTURE_SENSOR,
+        .mSensorID = MOISTURE_SENSOR_L_ID,
+        .mJackDetectPin = MOISTURE_SENSOR_L_JACK_DETECT_PIN,
+        .mSensorConnectLEDPosition = MOISTURE_SENSOR_L_ACTIVE_LED
+    }
 };
 
 Sensor MOISTURE_SENSOR_R_HW = {
-    {
-        .mMoistureSensor = {
-            SENSOR_I2C, 
-            SOIL_SENSOR_3_ADDRESS
-        }
-    },
-    MOISTURE_SENSOR,
-    MOISTURE_SENSOR_R_ID,
-    false,
-    MOISTURE_SENSOR_R_JACK_DETECT_PIN,
-    MOISTURE_SENSOR_R_ACTIVE_LED
+    .mSensorDefinition = {                               
+        .mSensor = {
+            .mMoistureSensor = {
+                SENSOR_I2C, 
+                SOIL_SENSOR_3_ADDRESS
+            }
+        },
+        .mSensorType = MOISTURE_SENSOR,
+        .mSensorID = MOISTURE_SENSOR_R_ID,
+        .mJackDetectPin = MOISTURE_SENSOR_R_JACK_DETECT_PIN,
+        .mSensorConnectLEDPosition = MOISTURE_SENSOR_R_ACTIVE_LED
+    }
 };
 
 
@@ -203,7 +247,7 @@ MsgPackSensorReading MPACK_DHT22_SENSOR_R_READINGS[] = {
 MsgPackSensorData MPACK_SONAR_SENSOR_L = {
     SONAR_SENSOR_L_ID,                      // mSensorID
     "Sonar Sensor L",                       // mSensorName
-    DISCONNECTED,                           // mSensorStatus
+    SENSOR_DISCONNECTED,                    // mSensorStatus
     {                                       // mCalibration
         false,                              // mIsCalibratable
         FLOAT_READING,                      // mCalibrationValueType
@@ -217,7 +261,7 @@ MsgPackSensorData MPACK_SONAR_SENSOR_L = {
 MsgPackSensorData MPACK_SONAR_SENSOR_R = {
     SONAR_SENSOR_R_ID,                      // mSensorID
     "Sonar Sensor R",                       // mSensorName
-    DISCONNECTED,                           // mSensorStatus
+    SENSOR_DISCONNECTED,                    // mSensorStatus
     {                                       // mCalibration
         false,                              // mIsCalibratable
         FLOAT_READING,                      // mCalibrationValueType
@@ -231,7 +275,7 @@ MsgPackSensorData MPACK_SONAR_SENSOR_R = {
 MsgPackSensorData MPACK_MOISTURE_SENSOR_L = {
     MOISTURE_SENSOR_L_ID,                   // mSensorID
     "Moisture Sensor L",                    // mSensorName
-    DISCONNECTED,                           // mSensorStatus
+    SENSOR_DISCONNECTED,                    // mSensorStatus
     {                                       // mCalibration
         false,                              // mIsCalibratable
         FLOAT_READING,                      // mCalibrationValueType
@@ -245,7 +289,7 @@ MsgPackSensorData MPACK_MOISTURE_SENSOR_L = {
 MsgPackSensorData MPACK_MOISTURE_SENSOR_R = {
     MOISTURE_SENSOR_R_ID,                   // mSensorID
     "Moisture Sensor R",                    // mSensorName
-    DISCONNECTED,                           // mSensorStatus
+    SENSOR_DISCONNECTED,                    // mSensorStatus
     {                                       // mCalibration
         false,                              // mIsCalibratable
         FLOAT_READING,                      // mCalibrationValueType
@@ -259,7 +303,7 @@ MsgPackSensorData MPACK_MOISTURE_SENSOR_R = {
 MsgPackSensorData MPACK_DHT22_SENSOR_L = {
     TEMP_SENSOR_L_ID,                       // mSensorID
     "Temp/Humidity Sensor L",               // mSensorName
-    DISCONNECTED,                           // mSensorStatus
+    SENSOR_DISCONNECTED,                    // mSensorStatus
     {                                       // mCalibration
         false,                              // mIsCalibratable
         FLOAT_READING,                      // mCalibrationValueType
@@ -273,7 +317,7 @@ MsgPackSensorData MPACK_DHT22_SENSOR_L = {
 MsgPackSensorData MPACK_DHT22_SENSOR_R = {
     TEMP_SENSOR_R_ID,                       // mSensorID
     "Temp/Humidity Sensor R",               // mSensorName
-    DISCONNECTED,                           // mSensorStatus
+    SENSOR_DISCONNECTED,                    // mSensorStatus
     {                                       // mCalibration
         false,                              // mIsCalibratable
         FLOAT_READING,                      // mCalibrationValueType

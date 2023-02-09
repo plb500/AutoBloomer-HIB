@@ -20,14 +20,6 @@ typedef enum {
 } CommandResponseCode;
 
 
-// Describes the current sensor status
-typedef enum {
-    CONNECTED_WORKING           = 0x00,
-    CONNECTED_NOT_WORKING       = 0x01,
-    DISCONNECTED                = 0x02,
-} SensorStatus;
-
-
 // Incoming byte value definitions
 typedef enum { 
     COMMAND_START_BYTE          = 0xFF,

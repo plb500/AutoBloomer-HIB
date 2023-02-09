@@ -47,7 +47,6 @@ void init_sensor_controller(
 bool update_sensor_controller(
     ControllerInterface *controllerInterface,
     Sensor **sensor,
-    SensorData *sensorData,
     uint8_t numSensors
 );
 
