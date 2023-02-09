@@ -16,6 +16,8 @@ add_executable(PiFeederSensors
     src/hardware/sensors/sonar_sensor.c
     src/hardware/sensors/sensor_msgpack.c
     src/sensor_controller/sensor_controller.c
+    src/sensor_multicore/sensor_multicore_utils.c
+    src/sensor_multicore/sensor_controller_core.c
 )
 
 pico_generate_pio_header(PiFeederSensors ${CMAKE_CURRENT_LIST_DIR}/src/pio/uart_rx.pio)
@@ -32,6 +34,7 @@ target_link_libraries(PiFeederSensors
     hardware_i2c
     hardware_uart
     hardware_pio
+    pico_util
     pico_multicore 
     hardware_flash
 )

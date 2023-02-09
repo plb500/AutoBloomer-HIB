@@ -16,7 +16,7 @@
 // Serial comms interface to main controller
 ControllerInterface _sensorControllerInterface = {
     .mUART = SENSOR_CONTROLLER_UART,
-    .mMsgPackSensors = SENSOR_MSGPACK,
+    .mMsgPackSensors = sensorPackets,
     .mNumMsgPackSensors = NUM_SENSORS
 };
 
@@ -30,10 +30,10 @@ LEDShifter _ledShifter = {
 const uint ONBOARD_LED_PIN = 25;
 
 
-void update_sensor_status_indicators(LEDShifter *ledShifter, Sensor** sensors, uint8_t numSensors) {
+void update_sensor_status_indicators(LEDShifter *ledShifter, Sensor* sensors, uint8_t numSensors) {
     for(int i = 0; i < numSensors; ++i) {
-        bool ledOn = (sensors[i]->mCurrentSensorData.mSensorStatus == SENSOR_CONNECTED_VALID_DATA);
-        set_led_state(ledShifter, sensors[i]->mSensorDefinition.mSensorConnectLEDPosition, ledOn);
+        bool ledOn = (sensors[i].mCurrentSensorData.mSensorStatus == SENSOR_CONNECTED_VALID_DATA);
+        set_led_state(ledShifter, sensors[i].mSensorDefinition.mSensorConnectLEDPosition, ledOn);
     }
     output_led_shifter_state(ledShifter);
 }
@@ -50,7 +50,7 @@ int main() {
 
     // Initialize sensors
     initialize_sensors(
-        _sensorsList, 
+        sensorsList, 
         NUM_SENSORS,
         SENSOR_I2C,
         SENSOR_I2C_BAUDRATE,
@@ -73,7 +73,7 @@ int main() {
 
         // Update sensor readings
         DEBUG_PRINT("Update sensors\n");
-        update_sensor_readings(_sensorsList, NUM_SENSORS);
+        update_sensor_readings(sensorsList, NUM_SENSORS);
 
 
                 // Process serial input
@@ -81,7 +81,7 @@ int main() {
         // Handle serial controller I/O
         DEBUG_PRINT("Update serial\n");
         gpio_put(ONBOARD_LED_PIN, 1);
-        update_sensor_controller(&_sensorControllerInterface, _sensorsList, NUM_SENSORS);
+        update_sensor_controller(&_sensorControllerInterface, sensorsList, NUM_SENSORS);
         gpio_put(ONBOARD_LED_PIN, 0);
 
 
@@ -89,7 +89,7 @@ int main() {
 
         // Update sensor LED indicators
         DEBUG_PRINT("Update LED\n");
-        update_sensor_status_indicators(&_ledShifter, _sensorsList, NUM_SENSORS);
+        update_sensor_status_indicators(&_ledShifter, sensorsList, NUM_SENSORS);
 
         // Chill
         sleep_ms(1);

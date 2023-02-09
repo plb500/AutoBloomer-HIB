@@ -32,7 +32,6 @@ typedef union {
 } SensorReading;
 
 typedef struct {
-    uint8_t                 mSensorID;
     SensorStatus            mSensorStatus;
     SensorReading           mSensorReading;
 } SensorData;
@@ -57,8 +56,8 @@ static const float TEMP_SENSOR_MAX_VALUE        = 100.f;
 static const float RH_SENSOR_MAX_VALUE          = 100.f;
 
 bool is_sensor_connected(Sensor *sensor);
-void initialize_sensors(Sensor **sensors, uint8_t numSensors, i2c_inst_t *i2c, const int baud, const int sdaPin, const int sclPin);
-void update_sensor_readings(Sensor **sensors, uint8_t numSensors);
+void initialize_sensors(Sensor *sensors, uint8_t numSensors, i2c_inst_t *i2c, const int baud, const int sdaPin, const int sclPin);
+void update_sensor_readings(Sensor *sensors, uint8_t numSensors);
 void update_sensor_indicators(Sensor **sensors, uint8_t numSensors);
 
 #endif      // SENSOR_H

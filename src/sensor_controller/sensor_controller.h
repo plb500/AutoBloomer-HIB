@@ -29,7 +29,7 @@ typedef struct {
     uint8_t mCurrentBufferPos;                              // Current write position in the incoming buffer
     uint8_t mMsgPackOutputBuffer[MPACK_OUT_BUFFER_SIZE];    // Byte buffer for outgoing (mpack) serial data
     uint32_t mNextHeartbeatTime;                            // Time for next heartbeat output pulse
-    MsgPackSensorData **mMsgPackSensors;                    // Description and data storage objects for outgoing packed data
+    MsgPackSensorPacket *mMsgPackSensors;                   // Description and data storage objects for outgoing packed data
     uint8_t mNumMsgPackSensors;                             // Number of elements in above array
 } ControllerInterface;
 
@@ -46,7 +46,7 @@ void init_sensor_controller(
 // controller interface
 bool update_sensor_controller(
     ControllerInterface *controllerInterface,
-    Sensor **sensor,
+    Sensor *sensor,
     uint8_t numSensors
 );
 

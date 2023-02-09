@@ -43,23 +43,32 @@ bool initialize_sensor_hardware(Sensor *sensor) {
     return initialized;
 }
 
-void initialize_sensors(Sensor **sensors, uint8_t numSensors, i2c_inst_t *i2c, const int baud, const int sdaPin, const int sclPin) {
+void initialize_sensor_data(Sensor *sensor) {
+    if(!sensor) {
+        return;
+    }
+
+    sensor->mCurrentSensorData.mSensorStatus = SENSOR_DISCONNECTED;
+}
+
+void initialize_sensors(Sensor *sensors, uint8_t numSensors, i2c_inst_t *i2c, const int baud, const int sdaPin, const int sclPin) {
     // Initialize the I2C bus
     init_sensor_bus(i2c, baud, sdaPin, sclPin);
 
     // Setup sensors
     for(int i = 0; i < numSensors; ++i) {
         // Initialize jack detect pin
-        initialize_sensor_jack_detect_pin(sensors[i]->mSensorDefinition.mJackDetectPin);
+        initialize_sensor_jack_detect_pin(sensors[i].mSensorDefinition.mJackDetectPin);
+        initialize_sensor_data(&sensors[i]);
     }
 }
 
-void debug_sensors(Sensor **sensors, uint8_t numSensors) {
+void debug_sensors(Sensor *sensors, uint8_t numSensors) {
     DEBUG_PRINT("Sensor Updates\n");
     DEBUG_PRINT("--------------\n");
 
     for(int i = 0; i < numSensors; ++i) {
-        Sensor *sensor = sensors[i];
+        Sensor *sensor = &sensors[i];
         SensorData *sensorData = &sensor->mCurrentSensorData;
 
         DEBUG_PRINT("  * Sensor %d (type: %d)\n", i, sensor->mSensorDefinition.mSensorType);
@@ -105,11 +114,11 @@ void debug_sensors(Sensor **sensors, uint8_t numSensors) {
     DEBUG_PRINT("\n**************************************\n\n");
 }
 
-void update_sensor_readings(Sensor **sensors, uint8_t numSensors) {
+void update_sensor_readings(Sensor *sensors, uint8_t numSensors) {
     float val;
 
     for(int i = 0; i < numSensors; ++i) {
-        Sensor *sensor = sensors[i];
+        Sensor *sensor = &sensors[i];
         SensorData *sensorData = &sensor->mCurrentSensorData;
         memset(sensorData, 0, sizeof(SensorData));
         // sensorData->mSensorID = sensor->mSensorID;
