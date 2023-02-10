@@ -3,8 +3,8 @@
 
 #include <unistd.h>
 #include <stdbool.h>
-#include "sensor.h"
-#include "sensor_controller/command_definitions.h"
+#include "hardware/sensors/sensor.h"
+#include "command_definitions.h"
 
 /**
  *              /------------------------------------\

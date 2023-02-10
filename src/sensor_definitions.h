@@ -1,9 +1,9 @@
-#ifndef SENSOR_MSGPACK_IMPL_H
-#define SENSOR_MSGPACK_IMPL_H
+#ifndef SENSOR_DEFINITIONS_H
+#define SENSOR_DEFINITIONS_H
 
 #include "hardware_definitions.h"
 #include "hardware/sensors/sensor.h"
-#include "hardware/sensors/sensor_msgpack.h"
+#include "uart_controller/sensor_msgpack.h"
 
 // Sensor IDs/array positions
 typedef enum {
@@ -17,13 +17,10 @@ typedef enum {
     NUM_SENSORS
 } SensorID;
 
-
-extern SonarPIOWrapper PIO_WRAPPER;
-
 // Our list of actual sensor hardware
 extern Sensor sensorsList[NUM_SENSORS];
 
-// Data wrappers for connected hardware 
+// Data transmission wrappers for connected hardware 
 extern MsgPackSensorPacket sensorPackets[NUM_SENSORS];
 
-#endif      // SENSOR_MSGPACK_IMPL_H
+#endif      // SENSOR_DEFINITIONS_H

@@ -57,3 +57,20 @@ void push_sensor_data_to_queue(queue_t *sensorDataQueue, Sensor *sensor) {
 
     } while(!added);
 }
+
+void consume_update_queue_messages(queue_t *sensorUpdateQueue, MsgPackSensorPacket *sensorPackets, int numSensors) {
+    SensorDataUpdateMessage msgHolder;
+    bool msgRead = false;
+    do {
+        msgRead = queue_try_remove(sensorUpdateQueue, &msgHolder);
+        if(msgRead) {
+            // Find the appropriate sensor packet in which to store the update message and transfer details
+            for(int i = 0; i < numSensors; ++i) {
+                if(sensorPackets[i].mSensorID == msgHolder.mSensorID) {
+                    update_message_to_sensor_packet(&msgHolder, &sensorPackets[i]);
+                    break;
+                }
+            }
+        }
+    } while(msgRead);
+}

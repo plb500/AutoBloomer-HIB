@@ -1,4 +1,4 @@
-#include "sensor_controller.h"
+#include "uart_sensor_controller.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -8,7 +8,6 @@
 #include "sensor_definitions.h"
 #include "debug_io.h"
 #include "utils.h"
-#include "hardware/sensors/sensor_msgpack.h"
 
 
 const uint32_t HEARTBEAT_TIMEOUT_MS = 5000;
@@ -17,25 +16,20 @@ const uint32_t HEARTBEAT_TIMEOUT_MS = 5000;
 void reset_controller_interface(ControllerInterface *controllerInterface, bool resetHeartbeat);
 void send_heartbeat(ControllerInterface *controllerInterface);
 void handle_incoming_byte(ControllerInterface *controllerInterface, uint8_t b);
-bool convert_sensor_data(
-    Sensor *sensors,
-    uint8_t numSensors,
-    MsgPackSensorPacket *msgPackSensorData
-);
 void handle_sensor_controller_command(
     ControllerInterface *controllerInterface,
-    Sensor *sensors,
+    MsgPackSensorPacket *sensorPackets,
     uint8_t numSensors
 );
 void handle_send_all_sensor_data_command(
     ControllerInterface *controllerInterface,
-    Sensor *sensors,
+    MsgPackSensorPacket *sensorPackets,
     uint8_t numSensors
 );
 void handle_send_sensor_data_command(
     uint8_t sensorID,
     ControllerInterface *controllerInterface,
-    Sensor *sensors,
+    MsgPackSensorPacket *sensorPackets,
     uint8_t numSensors
 );
 void write_msgpack_bytes(
@@ -57,51 +51,6 @@ void reset_controller_interface(
     if(resetHeartbeat) {
         controllerInterface->mNextHeartbeatTime     = 0;
     }
-}
-
-// Copy data from active sensor structures into outgoing serial message object
-bool convert_sensor_data(
-    Sensor *sensors,
-    uint8_t numSensors,
-    MsgPackSensorPacket *msgPackSensorData
-) {
-    if(!sensors || !msgPackSensorData) {
-        return false;
-    }
-
-    // Find the matching sensor data
-    Sensor *sensor = 0;
-    for(int i = 0; i < numSensors; ++i) {
-        if(sensors[i].mSensorDefinition.mSensorID == msgPackSensorData->mSensorID) {
-            sensor = &sensors[i];
-            break;
-        }
-    }
-
-    if(!sensor) {
-        return false;
-    }
-
-    // First, set the status
-    msgPackSensorData->mCurrentSensorData.mStatus = sensor->mCurrentSensorData.mSensorStatus;
-
-    // Next set the actual readings
-    switch(sensor->mSensorDefinition.mSensorType) {
-        case SONAR_SENSOR:
-            msgPackSensorData->mCurrentSensorData.mSensorReadings[SONAR_SENSOR_READING_INDEX].mValue.mIntValue = sensor->mCurrentSensorData.mSensorReading.mSonarSensorDistance;
-            break;
-
-        case MOISTURE_SENSOR:
-            msgPackSensorData->mCurrentSensorData.mSensorReadings[MOISTURE_SENSOR_READING_INDEX].mValue.mIntValue = sensor->mCurrentSensorData.mSensorReading.mMoistureSensorValue;
-            break;
-
-        case TEMP_HUMIDITY_SENSOR:
-            msgPackSensorData->mCurrentSensorData.mSensorReadings[DHT22_TEMPERATURE_READING_INDEX].mValue.mFloatValue = sensor->mCurrentSensorData.mSensorReading.mTempHumidityData.mTemperatureC;
-            msgPackSensorData->mCurrentSensorData.mSensorReadings[DHT22_HUMIDITY_READING_INDEX].mValue.mFloatValue = sensor->mCurrentSensorData.mSensorReading.mTempHumidityData.mRelativeHumidity;
-            break;
-    }
-
-    return true;
 }
 
 // Process an incoming serial byte and create a response, if necessary
@@ -138,26 +87,19 @@ void handle_incoming_byte(ControllerInterface *controllerInterface, uint8_t b) {
     controllerInterface->mCurrentCommand = (SensorCommandIdentifier) controllerInterface->mCommandBuffer[0];
 }
 
-void handle_calibrate_sensor_command(Sensor* sensors, int numSensors, uint8_t *calibrationValueBytes) {
+void handle_calibrate_sensor_command(
+    MsgPackSensorPacket *sensorPackets,
+    int numSensors, 
+    uint8_t *calibrationValueBytes
+) {
+    // TODO: This whole function needs to be rethunk and rewritten
+
     MsgPackCalibrationValue calibration = unpack_calibration_value(calibrationValueBytes, ARGUMENT_LENGTH);
 
-    Sensor *calibrationSensor = 0;
     for(int i = 0; i < numSensors; ++i) {
-        if(sensors[i].mSensorDefinition.mSensorID == calibration.mSensorID) {
-            calibrationSensor = &sensors[i];
+        if(sensorPackets[i].mSensorID == calibration.mSensorID) {
             break;
         }
-    }
-
-    if(!calibrationSensor) {
-        return;
-    }
-
-    switch(calibrationSensor->mSensorDefinition.mSensorType) {
-        case TEMP_HUMIDITY_SENSOR:
-        case MOISTURE_SENSOR:
-        default:
-            break;
     }
 }
 
@@ -181,7 +123,7 @@ void send_heartbeat(ControllerInterface *controllerInterface) {
 // Process a complete command received via serial interface
 void handle_sensor_controller_command(
     ControllerInterface *controllerInterface,
-    Sensor *sensors,
+    MsgPackSensorPacket *sensorPackets,
     uint8_t numSensors
 ) {
     uint8_t *argumentBytes = &(controllerInterface->mCommandBuffer[1]);
@@ -192,7 +134,7 @@ void handle_sensor_controller_command(
         case GET_ALL_SENSOR_VALUES:
             handle_send_all_sensor_data_command(
                 controllerInterface,
-                sensors,
+                sensorPackets,
                 numSensors
             );
             break;
@@ -205,7 +147,7 @@ void handle_sensor_controller_command(
             send_controller_ready(controllerInterface);
             break;
         case CALIBRATE_SENSOR:
-            handle_calibrate_sensor_command(sensors, numSensors, argumentBytes);
+            handle_calibrate_sensor_command(sensorPackets, numSensors, argumentBytes);
             break;
         case NO_COMMAND:
         default:
@@ -216,7 +158,7 @@ void handle_sensor_controller_command(
 // Send sensor data from all sensors
 void handle_send_all_sensor_data_command(
     ControllerInterface *controllerInterface,
-    Sensor *sensors,
+    MsgPackSensorPacket *sensorPackets,
     uint8_t numSensors
 ) {
     PackResponse response;
@@ -238,18 +180,14 @@ void handle_send_all_sensor_data_command(
     for(int i = 0; i < NUM_SENSORS; ++i) {
         MsgPackSensorPacket *m = &controllerInterface->mMsgPackSensors[i];
 
-        // Convert raw sensor data to msgpack structure
-        if(convert_sensor_data(sensors, numSensors, m)) {
-        // if(true) { 
-            response = pack_sensor_packet(
-                m,
-                controllerInterface->mMsgPackOutputBuffer,
-                MPACK_OUT_BUFFER_SIZE
-            );
+        response = pack_sensor_packet(
+            m,
+            controllerInterface->mMsgPackOutputBuffer,
+            MPACK_OUT_BUFFER_SIZE
+        );
 
-            if(!response.mErrorCode) {
-                write_msgpack_bytes(controllerInterface, response.mBytesUsed);
-            }
+        if(!response.mErrorCode) {
+            write_msgpack_bytes(controllerInterface, response.mBytesUsed);
         }
     }
 
@@ -264,7 +202,7 @@ void handle_send_all_sensor_data_command(
 void handle_send_sensor_data_command(
     uint8_t sensorID,
     ControllerInterface *controllerInterface,
-    Sensor *sensors,
+    MsgPackSensorPacket *sensorPackets,
     uint8_t numSensors
 ) {
     PackResponse response;
@@ -278,15 +216,6 @@ void handle_send_sensor_data_command(
         headerPacket.mResponseCode = SENSOR_NOT_FOUND;
     }
     
-    // Convert the sensor data for transmission
-    if(!convert_sensor_data(
-        sensors,
-        numSensors,
-        &controllerInterface->mMsgPackSensors[sensorID]
-    )) {
-        headerPacket.mResponseCode = SENSOR_NOT_FOUND;
-    }
-
     // Pack and send the header data
     response = pack_header_data(headerPacket, controllerInterface->mMsgPackOutputBuffer, MPACK_OUT_BUFFER_SIZE);
     if(!response.mErrorCode) {
@@ -351,11 +280,12 @@ void send_controller_ready(ControllerInterface *controllerInterface) {
 }
 
 // Perform updates - will read from serial interface and if necessary transmit a response. Blocking
-bool update_sensor_controller(
-    ControllerInterface *controllerInterface,
-    Sensor *sensors,
-    uint8_t numSensors
+bool update_uart_sensor_controller(
+    ControllerInterface *controllerInterface
 ) {
+    MsgPackSensorPacket *sensorPackets = controllerInterface->mMsgPackSensors;
+    uint8_t numSensors = controllerInterface->mNumMsgPackSensors;
+
     // Check for heartbeat
     uint32_t currentTimeMS = MILLIS();
     if(currentTimeMS > controllerInterface->mNextHeartbeatTime) {
@@ -382,7 +312,7 @@ bool update_sensor_controller(
             case HAS_COMPLETE_COMMAND:
                 handle_sensor_controller_command(
                     controllerInterface,
-                    sensors,
+                    sensorPackets,
                     numSensors
                 );
                 reset_controller_interface(controllerInterface, false);            

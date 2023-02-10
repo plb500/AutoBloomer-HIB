@@ -2,7 +2,7 @@
 #define SENSOR_MULTICORE_UTILS_H
 
 #include "hardware/sensors/sensor.h"
-#include "hardware/sensors/sensor_msgpack.h"
+#include "uart_controller/sensor_msgpack.h"
 #include "pico/util/queue.h"
 
 
@@ -16,6 +16,7 @@ void update_message_to_sensor_packet(SensorDataUpdateMessage *updateMessage, Msg
 
 void intitialize_sensor_data_queue(queue_t *sensorDataQueue, int numMessages);
 void push_sensor_data_to_queue(queue_t *sensorDataQueue, Sensor *sensor);
+void consume_update_queue_messages(queue_t *sensorUpdateQueue, MsgPackSensorPacket *sensorPackets, int numSensors);
 
 
 #endif

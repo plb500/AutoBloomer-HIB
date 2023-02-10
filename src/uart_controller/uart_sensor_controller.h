@@ -1,10 +1,11 @@
-#ifndef SENSOR_CONTROLLER_H
-#define SENSOR_CONTROLLER_H
+#ifndef UART_SENSOR_CONTROLLER_H
+#define UART_SENSOR_CONTROLLER_H
 
 #include "hardware/uart.h"
 #include "hardware/sensors/sensor.h"
 #include "command_definitions.h"
-#include "hardware/sensors/sensor_msgpack.h"
+#include "sensor_msgpack.h"
+#include "pico/util/queue.h"
 
 
 #define ARGUMENT_LENGTH         (8)
@@ -31,6 +32,8 @@ typedef struct {
     uint32_t mNextHeartbeatTime;                            // Time for next heartbeat output pulse
     MsgPackSensorPacket *mMsgPackSensors;                   // Description and data storage objects for outgoing packed data
     uint8_t mNumMsgPackSensors;                             // Number of elements in above array
+    queue_t *mSensorUpdateQueue;                            // The inter-core queue for passing sensor data updates between cores
+    uint mSerialLEDPin;                                     // Pin for indicating serial communications via an LED
 } ControllerInterface;
 
 
@@ -44,10 +47,8 @@ void init_sensor_controller(
 
 // Perform an update (read from serial port/push command response data) on the
 // controller interface
-bool update_sensor_controller(
-    ControllerInterface *controllerInterface,
-    Sensor *sensor,
-    uint8_t numSensors
+bool update_uart_sensor_controller(
+    ControllerInterface *controllerInterface
 );
 
 // Sends a packet through the serial interface indicating that the controller is ready

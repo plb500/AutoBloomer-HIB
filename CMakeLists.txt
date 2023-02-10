@@ -5,19 +5,23 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
 add_executable(PiFeederSensors
-    src/pi_feeder_sensor_core.c
     src/sensor_definitions.c
+    
     src/mpack/mpack.c
+    
     src/hardware/push_button.c
     src/hardware/led_shifter.c
     src/hardware/sensors/sensor.c
     src/hardware/sensors/dht_sensor.c
     src/hardware/sensors/stemma_soil_sensor.c
     src/hardware/sensors/sonar_sensor.c
-    src/hardware/sensors/sensor_msgpack.c
-    src/sensor_controller/sensor_controller.c
+
+    src/uart_controller/sensor_msgpack.c
+    src/uart_controller/uart_sensor_controller.c
+
+    src/sensor_multicore/sensor_hardware_core_0.c
+    src/sensor_multicore/sensor_uart_control_core_1.c
     src/sensor_multicore/sensor_multicore_utils.c
-    src/sensor_multicore/sensor_controller_core.c
 )
 
 pico_generate_pio_header(PiFeederSensors ${CMAKE_CURRENT_LIST_DIR}/src/pio/uart_rx.pio)

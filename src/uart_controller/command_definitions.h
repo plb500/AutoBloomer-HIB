@@ -1,6 +1,7 @@
 #ifndef COMMAND_DEFINITIONS_H
 #define COMMAND_DEFINITIONS_H
 
+
 // Sensor commands
 typedef enum { 
     NO_COMMAND                  = 0x00,

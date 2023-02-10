@@ -26,7 +26,9 @@
     "stdlib.h": "c",
     "sensor_controller.h": "c",
     "sensor_msgpack_data.h": "c",
-    "hardware_definitions.h": "c"
+    "hardware_definitions.h": "c",
+    "sensor_msgpack.h": "c",
+    "sensor_uart_control_core_1.h": "c"
 },
 "cortex-debug.variableUseNaturalFormat": true,
 "C_Cpp.errorSquiggles": "Disabled"

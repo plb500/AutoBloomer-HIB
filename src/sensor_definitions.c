@@ -137,57 +137,6 @@ MsgPackSensorReadingDescription MPACK_SOIL_MOISTURE_READING_DESCRIPTION = {
 };
 
 
-// Reading output objects
-MsgPackSensorReading MPACK_SONAR_SENSOR_L_READINGS[] = {
-    {
-        &MPACK_SONAR_READING_DESCRIPTION,
-        {.mIntValue=0}
-    }    
-};
-
-MsgPackSensorReading MPACK_SONAR_SENSOR_R_READINGS[] = {
-    {
-        &MPACK_SONAR_READING_DESCRIPTION,
-        {.mIntValue=0}
-    }    
-};
-
-MsgPackSensorReading MPACK_MOISTURE_SENSOR_L_READINGS[] = {
-    {
-        &MPACK_SOIL_MOISTURE_READING_DESCRIPTION,
-        {.mIntValue=0}
-    }    
-};
-
-MsgPackSensorReading MPACK_MOISTURE_SENSOR_R_READINGS[] = {
-    {
-        &MPACK_SOIL_MOISTURE_READING_DESCRIPTION,
-        {.mIntValue=0}
-    }    
-};
-
-MsgPackSensorReading MPACK_DHT22_SENSOR_L_READINGS[] = {
-    {
-        &MPACK_TEMPERATURE_READING_DESCRIPTION,
-        {.mFloatValue=0.f}
-    },
-    {
-        &MPACK_HUMIDITY_READING_DESCRIPTION,
-        {.mFloatValue=0.f}
-    }
-};
-
-MsgPackSensorReading MPACK_DHT22_SENSOR_R_READINGS[] = {
-    {
-        &MPACK_TEMPERATURE_READING_DESCRIPTION,
-        {.mFloatValue=0.f}
-    },
-    {
-        &MPACK_HUMIDITY_READING_DESCRIPTION,
-        {.mFloatValue=0.f}
-    }
-};
-
                         /////////////////////////////////////////////////
                         // Sensor data wrappers for connected hardware //
                         /////////////////////////////////////////////////
@@ -206,7 +155,14 @@ MsgPackSensorPacket sensorPackets[NUM_SENSORS] = {
         .mCurrentSensorData = {
             .mStatus = SENSOR_DISCONNECTED,
             .mNumReadings = 1,
-            .mSensorReadings = MPACK_SONAR_SENSOR_L_READINGS
+            .mSensorReadings = (MsgPackSensorReading[1]) {
+                {
+                    &MPACK_SONAR_READING_DESCRIPTION,
+                    {
+                        .mIntValue=0
+                    }
+                }    
+            }
         }
     },
     {
@@ -222,7 +178,14 @@ MsgPackSensorPacket sensorPackets[NUM_SENSORS] = {
         .mCurrentSensorData = {
             .mStatus = SENSOR_DISCONNECTED,
             .mNumReadings = 1,
-            .mSensorReadings = MPACK_SONAR_SENSOR_R_READINGS
+            .mSensorReadings = (MsgPackSensorReading[1]) {
+                {
+                    &MPACK_SONAR_READING_DESCRIPTION,
+                    {
+                        .mIntValue=0
+                    }
+                }    
+            }
         }
     },
     {
@@ -238,7 +201,14 @@ MsgPackSensorPacket sensorPackets[NUM_SENSORS] = {
         .mCurrentSensorData = {
             .mStatus = SENSOR_DISCONNECTED,
             .mNumReadings = 1,
-            .mSensorReadings = MPACK_MOISTURE_SENSOR_L_READINGS
+            .mSensorReadings = (MsgPackSensorReading[1]) {
+                {
+                    &MPACK_SOIL_MOISTURE_READING_DESCRIPTION,
+                    {
+                        .mIntValue=0
+                    }
+                }    
+            }
         }
     },
     {
@@ -254,7 +224,14 @@ MsgPackSensorPacket sensorPackets[NUM_SENSORS] = {
         .mCurrentSensorData = {
             .mStatus = SENSOR_DISCONNECTED,
             .mNumReadings = 1,
-            .mSensorReadings = MPACK_MOISTURE_SENSOR_R_READINGS
+            .mSensorReadings = (MsgPackSensorReading[1]) {
+                {
+                    &MPACK_SOIL_MOISTURE_READING_DESCRIPTION,
+                    {
+                        .mIntValue=0
+                    }
+                }    
+            }
         }
     },
     {
@@ -270,7 +247,20 @@ MsgPackSensorPacket sensorPackets[NUM_SENSORS] = {
         .mCurrentSensorData = {
             .mStatus = SENSOR_DISCONNECTED,
             .mNumReadings = 2,
-            .mSensorReadings = MPACK_DHT22_SENSOR_L_READINGS
+            .mSensorReadings = (MsgPackSensorReading[2]) {
+                {
+                    &MPACK_TEMPERATURE_READING_DESCRIPTION,
+                    {
+                        .mFloatValue=0.f
+                    }
+                },
+                {
+                    &MPACK_HUMIDITY_READING_DESCRIPTION,
+                    {
+                        .mFloatValue=0.f
+                    }
+                }    
+            }
         }
     },
     {
@@ -286,7 +276,20 @@ MsgPackSensorPacket sensorPackets[NUM_SENSORS] = {
         .mCurrentSensorData = {
             .mStatus = SENSOR_DISCONNECTED,
             .mNumReadings = 2,
-            .mSensorReadings = MPACK_DHT22_SENSOR_R_READINGS
+            .mSensorReadings = (MsgPackSensorReading[2]) {
+                {
+                    &MPACK_TEMPERATURE_READING_DESCRIPTION,
+                    {
+                        .mFloatValue=0.f
+                    }
+                },
+                {
+                    &MPACK_HUMIDITY_READING_DESCRIPTION,
+                    {
+                        .mFloatValue=0.f
+                    }
+                }    
+            }
         }
     }
 };
