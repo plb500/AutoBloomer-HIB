@@ -2,21 +2,15 @@
 #define SENSOR_MULTICORE_UTILS_H
 
 #include "hardware/sensors/sensor.h"
+#include "sensor_definitions.h"
 #include "uart_controller/sensor_msgpack.h"
 #include "pico/util/queue.h"
 
 
-typedef struct {
-    uint8_t                 mSensorID;
-    SensorData              mSensorData;
-} SensorDataUpdateMessage;
-
-void sensor_to_update_message(Sensor *sensor, SensorDataUpdateMessage *updateMessage);
-void update_message_to_sensor_packet(SensorDataUpdateMessage *updateMessage, MsgPackSensorPacket *sensorPacket);
-
+// Queue management
 void intitialize_sensor_data_queue(queue_t *sensorDataQueue, int numMessages);
-void push_sensor_data_to_queue(queue_t *sensorDataQueue, Sensor *sensor);
-void consume_update_queue_messages(queue_t *sensorUpdateQueue, MsgPackSensorPacket *sensorPackets, int numSensors);
+void push_sensor_data_to_queue(queue_t *sensorDataQueue, Sensor *sensors);
+void consume_update_queue_messages(queue_t *sensorUpdateQueue, MsgPackSensorPacket *sensorPackets);
 
 
 #endif

@@ -1,54 +1,92 @@
 #include "sensor_multicore_utils.h"
 
-void sensor_to_update_message(Sensor *sensor, SensorDataUpdateMessage *updateMessage) {
-    if(!sensor || !updateMessage) {
+
+typedef struct {
+    uint8_t                 mSensorID;
+    SensorData              mSensorData;
+} SensorDataUpdate;
+
+typedef struct {
+    SensorDataUpdate        mSensorUpdates[NUM_SENSORS];
+} SensorDataUpdateMessage;
+
+
+void sensor_to_data_update(Sensor *sensor, SensorDataUpdate *dataUpdate) {
+    if(!sensor || !dataUpdate) {
         return;
     }
 
-    updateMessage->mSensorID = sensor->mSensorDefinition.mSensorID;
-    updateMessage->mSensorData = sensor->mCurrentSensorData;
+    dataUpdate->mSensorID = sensor->mSensorDefinition.mSensorID;
+    dataUpdate->mSensorData = sensor->mCurrentSensorData;
 }
 
-void update_message_to_sensor_packet(SensorDataUpdateMessage *updateMessage, MsgPackSensorPacket *sensorPacket) {
+void data_update_entry_to_sensor_packet(SensorDataUpdate *dataUpdate, MsgPackSensorPacket *sensorPacket) {
     // Sanity check
-    if(!updateMessage || !sensorPacket || (updateMessage->mSensorID != sensorPacket->mSensorID)) {
+    if(!dataUpdate || !sensorPacket || (dataUpdate->mSensorID != sensorPacket->mSensorID)) {
         return;
     }
 
     // First, set the status
-    sensorPacket->mCurrentSensorData.mStatus = updateMessage->mSensorData.mSensorStatus;
+    sensorPacket->mCurrentSensorData.mStatus = dataUpdate->mSensorData.mSensorStatus;
 
     // Next set the actual readings
     switch(sensorPacket->mSensorType) {
         case SONAR_SENSOR:
-            sensorPacket->mCurrentSensorData.mSensorReadings[SONAR_SENSOR_READING_INDEX].mValue.mIntValue = updateMessage->mSensorData.mSensorReading.mSonarSensorDistance;
+            sensorPacket->mCurrentSensorData.mSensorReadings[SONAR_SENSOR_READING_INDEX].mValue.mIntValue = dataUpdate->mSensorData.mSensorReading.mSonarSensorDistance;
             break;
 
         case MOISTURE_SENSOR:
-            sensorPacket->mCurrentSensorData.mSensorReadings[MOISTURE_SENSOR_READING_INDEX].mValue.mIntValue = updateMessage->mSensorData.mSensorReading.mMoistureSensorValue;
+            sensorPacket->mCurrentSensorData.mSensorReadings[MOISTURE_SENSOR_READING_INDEX].mValue.mIntValue = dataUpdate->mSensorData.mSensorReading.mMoistureSensorValue;
             break;
 
         case TEMP_HUMIDITY_SENSOR:
-            sensorPacket->mCurrentSensorData.mSensorReadings[DHT22_TEMPERATURE_READING_INDEX].mValue.mFloatValue = updateMessage->mSensorData.mSensorReading.mTempHumidityData.mTemperatureC;
-            sensorPacket->mCurrentSensorData.mSensorReadings[DHT22_HUMIDITY_READING_INDEX].mValue.mFloatValue = updateMessage->mSensorData.mSensorReading.mTempHumidityData.mRelativeHumidity;
+            sensorPacket->mCurrentSensorData.mSensorReadings[DHT22_TEMPERATURE_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mTempHumidityData.mTemperatureC;
+            sensorPacket->mCurrentSensorData.mSensorReadings[DHT22_HUMIDITY_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mTempHumidityData.mRelativeHumidity;
             break;
     }
 }
+
+
+void sensor_data_to_update_message(Sensor *sensors, SensorDataUpdateMessage *updateMessage) {
+    if(!sensors || !updateMessage) {
+        return;
+    }
+
+    for(int i = 0; i < NUM_SENSORS; ++i) {
+        sensor_to_data_update(&sensors[i], &updateMessage->mSensorUpdates[i]); 
+    }
+}
+
+void update_message_to_sensor_packet(SensorDataUpdateMessage *updateMessage, MsgPackSensorPacket *sensorPacket) {
+    // Sanity check
+    if(!updateMessage || !sensorPacket) {
+        return;
+    }
+
+    for(int i = 0; i < NUM_SENSORS; ++i) {
+        data_update_entry_to_sensor_packet(&updateMessage->mSensorUpdates[i], &sensorPacket[i]);
+    }
+}
+
+
+        // PUBLIC FUNCTIONS //
 
 void intitialize_sensor_data_queue(queue_t *sensorDataQueue, int numMessages) {
     queue_init(sensorDataQueue, sizeof(SensorDataUpdateMessage), numMessages);
 }
 
-void push_sensor_data_to_queue(queue_t *sensorDataQueue, Sensor *sensor) {
-    if(!sensor || !sensorDataQueue) {
+void push_sensor_data_to_queue(queue_t *sensorDataQueue, Sensor *sensors) {
+    if(!sensors || !sensorDataQueue) {
         return;
     }
 
     SensorDataUpdateMessage newData;
-    sensor_to_update_message(sensor, &newData);
+    sensor_data_to_update_message(sensors, &newData);
 
     bool added = false;
     do {
+        // We prefer new data to old data, so if the queue is full, pop off the oldest data to
+        // create space
         if(queue_is_full(sensorDataQueue)) {
             SensorDataUpdateMessage tmp;
             queue_remove_blocking(sensorDataQueue, &tmp);
@@ -58,19 +96,23 @@ void push_sensor_data_to_queue(queue_t *sensorDataQueue, Sensor *sensor) {
     } while(!added);
 }
 
-void consume_update_queue_messages(queue_t *sensorUpdateQueue, MsgPackSensorPacket *sensorPackets, int numSensors) {
+void consume_update_queue_messages(queue_t *sensorUpdateQueue, MsgPackSensorPacket *sensorPackets) {
+    
     SensorDataUpdateMessage msgHolder;
     bool msgRead = false;
+    bool haveMessage = false;
+
+    // Since updates are sent sequentially from core 0, we are really only interested in the latest update data and
+    // can discard any old messages since they contain stale sensor data. So we will just spin through the queue until
+    // there are no new messages
     do {
         msgRead = queue_try_remove(sensorUpdateQueue, &msgHolder);
         if(msgRead) {
-            // Find the appropriate sensor packet in which to store the update message and transfer details
-            for(int i = 0; i < numSensors; ++i) {
-                if(sensorPackets[i].mSensorID == msgHolder.mSensorID) {
-                    update_message_to_sensor_packet(&msgHolder, &sensorPackets[i]);
-                    break;
-                }
-            }
+            haveMessage = true;
         }
     } while(msgRead);
+
+    if(haveMessage) {
+        update_message_to_sensor_packet(&msgHolder, sensorPackets);
+    }
 }

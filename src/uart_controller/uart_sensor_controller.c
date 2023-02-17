@@ -267,13 +267,13 @@ void send_controller_ready(ControllerInterface *controllerInterface) {
     PackResponse response;
 
     // Pack and send the header data
-    response = pack_controller_ready_packet(controllerInterface->mMsgPackOutputBuffer, response.mBytesUsed);
+    response = pack_controller_ready_packet(controllerInterface->mMsgPackOutputBuffer, MPACK_OUT_BUFFER_SIZE);
     if(!response.mErrorCode) {
         write_msgpack_bytes(controllerInterface, response.mBytesUsed);
     }
 
     // Pack and send terminator packet
-    response = pack_terminator_packet(CONTROLLER_READY_PACKET,controllerInterface->mMsgPackOutputBuffer, response.mBytesUsed);
+    response = pack_terminator_packet(CONTROLLER_READY_PACKET,controllerInterface->mMsgPackOutputBuffer, MPACK_OUT_BUFFER_SIZE);
     if(!response.mErrorCode) {
         write_msgpack_bytes(controllerInterface, response.mBytesUsed);
     }

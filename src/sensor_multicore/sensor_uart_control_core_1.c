@@ -18,8 +18,7 @@ void sensor_controller_core_main() {
         // First thing to do is process any inter-core messages from the sensor update core
         consume_update_queue_messages(
             _sensorControllerInterface.mSensorUpdateQueue,
-            _sensorControllerInterface.mMsgPackSensors,
-            _sensorControllerInterface.mNumMsgPackSensors
+            _sensorControllerInterface.mMsgPackSensors
         );
 
         // Secondly, handle any incoming controller commands
