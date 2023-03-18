@@ -1,4 +1,4 @@
-#include "sensor_pod.h"
+#include "scd30_sensor.h"
 
 #include <stdio.h>
 
@@ -49,10 +49,10 @@ const uint16_t SCD30_SERIAL_BYTE_SIZE                   = (SCD30_NUM_SERIAL_WORD
 uint8_t calc_crc(uint8_t *data, size_t len);
 bool validate_bytes(uint8_t *data, size_t len, uint8_t checksum);
 float bytes_to_float(uint8_t *data);
-bool write_scd30_cmd(SensorPod *sensorPod, uint16_t commandCode, uint16_t *args, uint8_t numArgs);
-bool write_scd30_cmd_no_args(SensorPod *sensorPod, uint16_t commandCode);
-bool read_scd30_response_words_into_bytes(SensorPod *sensorPod, uint8_t numWords, uint8_t *dst);
-bool get_scd30_data_ready_status(SensorPod *sensorPod);
+bool write_scd30_cmd(I2CInterface *i2cInterface, uint8_t address, uint16_t commandCode, uint16_t *args, uint8_t numArgs);
+bool write_scd30_cmd_no_args(I2CInterface *i2cInterface, uint8_t address, uint16_t commandCode);
+bool read_scd30_response_words_into_bytes(I2CInterface *i2cInterface, uint8_t address, uint8_t numWords, uint8_t *dst);
+bool get_scd30_data_ready_status(I2CInterface *i2cInterface, uint8_t address);
 // -- End internal functions
 
 uint8_t calc_crc(uint8_t *data, size_t len) {
@@ -80,7 +80,7 @@ float bytes_to_float(uint8_t *data) {
     return *((float *) &tmp);
 }
 
-bool write_scd30_cmd(SensorPod *sensorPod, uint16_t commandCode, uint16_t *args, uint8_t numArgs) {
+bool write_scd30_cmd(I2CInterface *i2cInterface, uint8_t address, uint16_t commandCode, uint16_t *args, uint8_t numArgs) {
     // Datasheet says max number of arguments is 1, but lets give ourselves space for 4, just in case
     if(numArgs > 4) {
         return false;
@@ -111,18 +111,18 @@ bool write_scd30_cmd(SensorPod *sensorPod, uint16_t commandCode, uint16_t *args,
         }
     }
 
-    return write_i2c_data(sensorPod->mInterface, sensorPod->mSCD30Address, outputBuffer, bufferIndex);
+    return write_i2c_data(i2cInterface, address, outputBuffer, bufferIndex);
 }
 
-bool write_scd30_cmd_no_args(SensorPod *sensorPod, uint16_t commandCode) {
-    return write_scd30_cmd(sensorPod, commandCode, 0, 0);
+bool write_scd30_cmd_no_args(I2CInterface *i2cInterface, uint8_t address, uint16_t commandCode) {
+    return write_scd30_cmd(i2cInterface, address, commandCode, 0, 0);
 }
 
-bool read_scd30_response_words_into_bytes(SensorPod *sensorPod, uint8_t numWords, uint8_t *dst) {
+bool read_scd30_response_words_into_bytes(I2CInterface *i2cInterface, uint8_t address, uint8_t numWords, uint8_t *dst) {
     uint8_t incomingBuffer[MAX_SCD30_RESPONSE_WORDS * SCD30_RESPONSE_WORD_BYTE_COUNT];
     uint16_t bytesToRead = (numWords * SCD30_RESPONSE_WORD_BYTE_COUNT);
 
-    if(!read_from_i2c(sensorPod->mInterface, sensorPod->mSCD30Address, incomingBuffer, bytesToRead)) {
+    if(!read_from_i2c(i2cInterface, address, incomingBuffer, bytesToRead)) {
         return false;
     }
 
@@ -138,23 +138,23 @@ bool read_scd30_response_words_into_bytes(SensorPod *sensorPod, uint8_t numWords
     return true;
 }
 
-bool write_and_confirm_cmd_args(SensorPod *sensorPod, uint16_t commandCode, uint16_t commandParam) {
+bool write_and_confirm_cmd_args(I2CInterface *i2cInterface, uint8_t address, uint16_t commandCode, uint16_t commandParam) {
     uint8_t confirmValue[2];
 
     // Write value
-    if(!write_scd30_cmd(sensorPod, commandCode, &commandParam, 1)) {
+    if(!write_scd30_cmd(i2cInterface, address, commandCode, &commandParam, 1)) {
         return false;
     }
 
     // Read value back and confirm
-    if(!write_scd30_cmd_no_args(sensorPod, commandCode)) {
+    if(!write_scd30_cmd_no_args(i2cInterface, address, commandCode)) {
         return false;
     }
 
     sleep_ms(READ_DELAY_MS);
 
     // Get response
-    if(!read_scd30_response_words_into_bytes(sensorPod, 1, (uint8_t *) &confirmValue)) {
+    if(!read_scd30_response_words_into_bytes(i2cInterface, address, 1, (uint8_t *) &confirmValue)) {
         return false;
     }
 
@@ -164,52 +164,36 @@ bool write_and_confirm_cmd_args(SensorPod *sensorPod, uint16_t commandCode, uint
 
         // Public functions
 
-bool trigger_scd30_continuous_measurement(SensorPod *sensorPod, uint16_t pressureCompensation) {
-    if(!select_sensor_pod(sensorPod)) {
-        return false;
-    }
-
-    return write_scd30_cmd(sensorPod, SCD30_CMD_START_CONTINUOUS_MEASUREMENT, &pressureCompensation, 1);
+bool trigger_scd30_continuous_measurement(I2CInterface *i2cInterface, uint8_t address, uint16_t pressureCompensation) {
+    return write_scd30_cmd(i2cInterface, address, SCD30_CMD_START_CONTINUOUS_MEASUREMENT, &pressureCompensation, 1);
 }
 
-bool stop_scd30_continuous_measurement(SensorPod *sensorPod) {
-    if(!select_sensor_pod(sensorPod)) {
-        return false;
-    }
-
-    return write_scd30_cmd_no_args(sensorPod, SCD30_CMD_STOP_CONTINUOUS_MEASUREMENT);
+bool stop_scd30_continuous_measurement(I2CInterface *i2cInterface, uint8_t address) {
+    return write_scd30_cmd_no_args(i2cInterface, address, SCD30_CMD_STOP_CONTINUOUS_MEASUREMENT);
 }
 
-bool set_scd30_measurement_interval(SensorPod *sensorPod, uint16_t measurementInterval) {
-    if(!select_sensor_pod(sensorPod)) {
-        return false;
-    }
-
-    return write_and_confirm_cmd_args(sensorPod, SCD30_CMD_SET_MEASUREMENT_INTERVAL, measurementInterval);
+bool set_scd30_measurement_interval(I2CInterface *i2cInterface, uint8_t address, uint16_t measurementInterval) {
+    return write_and_confirm_cmd_args(i2cInterface, address, SCD30_CMD_SET_MEASUREMENT_INTERVAL, measurementInterval);
 }
 
-bool get_scd30_data_ready_status(SensorPod *sensorPod) {
+bool get_scd30_data_ready_status(I2CInterface *i2cInterface, uint8_t address) {
     uint16_t response;
     uint8_t numResponseWords = 1;
 
-    if(!select_sensor_pod(sensorPod)) {
-        return false;
-    }
-
-    if(!write_scd30_cmd_no_args(sensorPod, SCD30_CMD_GET_DATA_READY)) {
+    if(!write_scd30_cmd_no_args(i2cInterface, address, SCD30_CMD_GET_DATA_READY)) {
         return false;
     }
 
     sleep_ms(READ_DELAY_MS);
 
-    if(!read_scd30_response_words_into_bytes(sensorPod, numResponseWords, (uint8_t *) &response)) {
+    if(!read_scd30_response_words_into_bytes(i2cInterface, address, numResponseWords, (uint8_t *) &response)) {
         return false;
     }
 
     return response;
 }
 
-SCD30SensorData get_scd30_reading(SensorPod *sensorPod) {
+SCD30SensorData get_scd30_reading(I2CInterface *i2cInterface, uint8_t address) {
     const int NUM_READING_RESPONSE_WORDS = 6;
     uint8_t dataBuffer[MAX_SCD30_RESPONSE_WORDS * SCD30_RESPONSE_WORD_SIZE];
 
@@ -220,24 +204,20 @@ SCD30SensorData get_scd30_reading(SensorPod *sensorPod) {
         .mHumidityReading       = -1.f
     };
 
-    if(!select_sensor_pod(sensorPod)) {
-        return returnData;
-    }
-
     // Check whether there is a reading available
-    if(!get_scd30_data_ready_status(sensorPod)) {
+    if(!get_scd30_data_ready_status(i2cInterface, address)) {
         return returnData;
     }
 
     // Request reading
-    if(!write_scd30_cmd_no_args(sensorPod, SCD30_CMD_READ_MEASUREMENT)) {
+    if(!write_scd30_cmd_no_args(i2cInterface, address, SCD30_CMD_READ_MEASUREMENT)) {
         return returnData;
     }
 
     sleep_ms(READ_DELAY_MS);
 
     // Get byte response
-    if(!read_scd30_response_words_into_bytes(sensorPod, NUM_READING_RESPONSE_WORDS, dataBuffer)) {
+    if(!read_scd30_response_words_into_bytes(i2cInterface, address, NUM_READING_RESPONSE_WORDS, dataBuffer)) {
         return returnData;
     }
 
@@ -250,81 +230,53 @@ SCD30SensorData get_scd30_reading(SensorPod *sensorPod) {
     return returnData;
 }
 
-bool set_scd30_automatic_self_calibration(SensorPod *sensorPod, bool selfCalibrationOn) {
+bool set_scd30_automatic_self_calibration(I2CInterface *i2cInterface, uint8_t address, bool selfCalibrationOn) {
     uint16_t param = selfCalibrationOn ? 1 : 0;
 
-    if(!select_sensor_pod(sensorPod)) {
-        return false;
-    }
-
-    return write_and_confirm_cmd_args(sensorPod, SCD30_CMD_AUTO_SELF_CALIBRATION, param);
+    return write_and_confirm_cmd_args(i2cInterface, address, SCD30_CMD_AUTO_SELF_CALIBRATION, param);
 }
 
-bool set_scd30_forced_recalibration_value(SensorPod *sensorPod, uint16_t referenceValue) {
-    if(!select_sensor_pod(sensorPod)) {
-        return false;
-    }
-
-    return write_and_confirm_cmd_args(sensorPod, SCD30_CMD_AUTO_SELF_CALIBRATION, referenceValue);
+bool set_scd30_forced_recalibration_value(I2CInterface *i2cInterface, uint8_t address, uint16_t referenceValue) {
+    return write_and_confirm_cmd_args(i2cInterface, address, SCD30_CMD_AUTO_SELF_CALIBRATION, referenceValue);
 }
 
-bool set_scd30_temperature_offset(SensorPod *sensorPod, uint16_t temperatureOffset) {
-    if(!select_sensor_pod(sensorPod)) {
-        return false;
-    }
-
-    return write_and_confirm_cmd_args(sensorPod, SCD30_CMD_SET_TEMPERATURE_OFFSET, temperatureOffset);
+bool set_scd30_temperature_offset(I2CInterface *i2cInterface, uint8_t address, uint16_t temperatureOffset) {
+    return write_and_confirm_cmd_args(i2cInterface, address, SCD30_CMD_SET_TEMPERATURE_OFFSET, temperatureOffset);
 }
 
-bool set_scd30_altitude_compensation(SensorPod *sensorPod, uint16_t altitude) {
-    if(!select_sensor_pod(sensorPod)) {
-        return false;
-    }
-
-    return write_and_confirm_cmd_args(sensorPod, SCD30_CMD_SET_ALTITUDE, altitude);
+bool set_scd30_altitude_compensation(I2CInterface *i2cInterface, uint8_t address, uint16_t altitude) {
+    return write_and_confirm_cmd_args(i2cInterface, address, SCD30_CMD_SET_ALTITUDE, altitude);
 }
 
-bool read_scd30_firmware_version(SensorPod *sensorPod, uint8_t *dst) {
+bool read_scd30_firmware_version(I2CInterface *i2cInterface, uint8_t address, uint8_t *dst) {
     uint8_t numResponseWords = 1;
 
-    if(!select_sensor_pod(sensorPod)) {
-        return false;
-    }
-
-    if(!write_scd30_cmd_no_args(sensorPod, SCD30_CMD_READ_FIRMWARE_VERSION)) {
+    if(!write_scd30_cmd_no_args(i2cInterface, address, SCD30_CMD_READ_FIRMWARE_VERSION)) {
         return false;
     }
 
     sleep_ms(READ_DELAY_MS);
 
-    if(!read_scd30_response_words_into_bytes(sensorPod, numResponseWords, dst)) {
+    if(!read_scd30_response_words_into_bytes(i2cInterface, address, numResponseWords, dst)) {
         return false;
     }
 
     return true;
 }
 
-bool do_scd30_soft_reset(SensorPod *sensorPod) {
-    if(!select_sensor_pod(sensorPod)) {
-        return false;
-    }
-
-    return write_scd30_cmd_no_args(sensorPod, SCD30_CMD_SOFT_RESET);
+bool do_scd30_soft_reset(I2CInterface *i2cInterface, uint8_t address) {
+    return write_scd30_cmd_no_args(i2cInterface, address, SCD30_CMD_SOFT_RESET);
 }
 
-bool read_scd30_serial(SensorPod *sensorPod, char *dst) {
-    if(!select_sensor_pod(sensorPod)) {
-        return false;
-    }
-
-    if(!write_scd30_cmd_no_args(sensorPod, SCD30_CMD_READ_SERIAL)) {
+bool read_scd30_serial(I2CInterface *i2cInterface, uint8_t address, char *dst) {
+    if(!write_scd30_cmd_no_args(i2cInterface, address, SCD30_CMD_READ_SERIAL)) {
         sprintf(dst, "NO SERIAL");
         return false;
     }
 
     sleep_ms(READ_DELAY_MS);
 
-    if(!read_scd30_response_words_into_bytes(sensorPod, SCD30_NUM_SERIAL_WORDS, dst)) {
+    if(!read_scd30_response_words_into_bytes(i2cInterface, address, SCD30_NUM_SERIAL_WORDS, dst)) {
         sprintf(dst, "NO SERIAL");
         return false;
     }

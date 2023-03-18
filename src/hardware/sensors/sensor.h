@@ -1,9 +1,9 @@
 #ifndef SENSOR_H
 #define SENSOR_H
 
-#include "hardware/sensors/sensor_i2c_interface.h"
-#include "hardware/sensors/sonar_sensor.h"
-#include "hardware/sensors/sensor_pod.h"
+#include "sensor_i2c_interface.h"
+#include "sonar_sensor.h"
+#include "sensor_pod.h"
 
 
 typedef enum {

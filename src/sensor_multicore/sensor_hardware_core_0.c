@@ -17,7 +17,7 @@
 #include "pico/util/queue.h"
 
 
-const uint ONBOARD_LED_PIN = 25;
+const uint8_t ONBOARD_LED_PIN = 25;
 const bool DEBUG_SENSOR_UPDATE = false;
 
 // Queue used for sending sensor updates from core0 to core1
@@ -40,6 +40,7 @@ ShiftRegister _ledShifter = {
     .mType = SIPO_SHIFT_REGISTER
 };
 
+
 void update_sensor_status_indicators(ShiftRegister *shiftRegister, Sensor* sensors, uint8_t numSensors) {
     for(int i = 0; i < numSensors; ++i) {
         bool ledOn = (sensors[i].mCurrentSensorData.mSensorStatus == SENSOR_CONNECTED_VALID_DATA);
@@ -48,7 +49,6 @@ void update_sensor_status_indicators(ShiftRegister *shiftRegister, Sensor* senso
     write_shift_register_states(shiftRegister);
 }
 
-
 int main() {
     // Initialize debug serial output
     DEBUG_PRINT_INIT();
@@ -56,7 +56,7 @@ int main() {
     // Initialize onboard LED
     gpio_init(ONBOARD_LED_PIN);
     gpio_set_dir(ONBOARD_LED_PIN, GPIO_OUT);
-    gpio_put(ONBOARD_LED_PIN, 0);
+    gpio_put(ONBOARD_LED_PIN, false);
 
     // Initialize the I2C interface
     init_sensor_bus(&sensorI2CInterface);
@@ -73,6 +73,9 @@ int main() {
     // Launch secondary core (core 1)
     multicore_launch_core1(sensor_controller_core_main);
 
+    // Activate status indicator
+    gpio_put(ONBOARD_LED_PIN, true);
+
     // core0 execution loop
     DEBUG_PRINT("Sensor initialization complete\n");
     while(1) {
@@ -80,7 +83,9 @@ int main() {
 
         // Update sensor readings
         DEBUG_PRINT("Update sensors\n");
+        gpio_put(ONBOARD_LED_PIN, false);
         update_sensors(sensorsList, NUM_SENSORS, DEBUG_SENSOR_UPDATE);
+        gpio_put(ONBOARD_LED_PIN, true);
 
         // Update sensor LED indicators
         DEBUG_PRINT("Update LEDs\n");

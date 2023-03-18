@@ -53,12 +53,16 @@ void write_shift_register_states(ShiftRegister *shiftRegister) {
 
     // Set latch pin low while we are setting the data
     gpio_put(shiftRegister->mLatchPin, 0);
+    sleep_us(1);
 
     // Clock each bit out individually
     for(int bit = 0; bit < 8; ++bit) {
         gpio_put(shiftRegister->mClockPin, 0);
+        sleep_us(1);
         gpio_put(shiftRegister->mDataPin, (shiftRegister->mCurrentValue & (1 << bit)));
+        sleep_us(1);
         gpio_put(shiftRegister->mClockPin, 1);
+        sleep_us(1);
     }
 
     // Set latch high to store data
@@ -75,7 +79,9 @@ void read_shift_register_states(ShiftRegister *shiftRegister) {
 
     // Latch the register
     gpio_put(shiftRegister->mLatchPin, false);
+    sleep_us(1);
     gpio_put(shiftRegister->mLatchPin, true);
+    sleep_us(1);
 
     // Shift input bits
     for(int i = 7; i >= 0; --i) {
@@ -85,7 +91,9 @@ void read_shift_register_states(ShiftRegister *shiftRegister) {
 
         // Shift next bit
         gpio_put(shiftRegister->mClockPin, true);
+        sleep_us(1);
         gpio_put(shiftRegister->mClockPin, false);
+        sleep_us(1);
     }    
 }
 

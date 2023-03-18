@@ -36,14 +36,13 @@ void data_update_entry_to_sensor_packet(SensorDataUpdate *dataUpdate, MsgPackSen
             break;
         
         case SENSOR_POD:
-            sensorPacket->mCurrentSensorData.mSensorReadings[SENSOR_POD_CO2_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mSensorPodData.mSCD30SensorData.mCO2Reading;
-            sensorPacket->mCurrentSensorData.mSensorReadings[SENSOR_POD_TEMPERATURE_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mSensorPodData.mSCD30SensorData.mTemperatureReading;
-            sensorPacket->mCurrentSensorData.mSensorReadings[SENSOR_POD_RH_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mSensorPodData.mSCD30SensorData.mHumidityReading;
+            sensorPacket->mCurrentSensorData.mSensorReadings[SENSOR_POD_CO2_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mSensorPodData.mCO2Level;
+            sensorPacket->mCurrentSensorData.mSensorReadings[SENSOR_POD_TEMPERATURE_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mSensorPodData.mTemperature;
+            sensorPacket->mCurrentSensorData.mSensorReadings[SENSOR_POD_RH_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mSensorPodData.mHumidity;
             sensorPacket->mCurrentSensorData.mSensorReadings[SENSOR_POD_SOIL_MOISTURE_READING_INDEX].mValue.mIntValue = dataUpdate->mSensorData.mSensorReading.mSensorPodData.mSoilSensorData;
             break;
     }
 }
-
 
 void sensor_data_to_update_message(Sensor *sensors, SensorDataUpdateMessage *updateMessage) {
     if(!sensors || !updateMessage) {
@@ -83,8 +82,7 @@ void push_sensor_data_to_queue(queue_t *sensorDataQueue, Sensor *sensors) {
 
     bool added = false;
     do {
-        // We prefer new data to old data, so if the queue is full, pop off the oldest data to
-        // create space
+        // We prefer new data to old data, so if the queue is full, pop off the oldest data to create space
         if(queue_is_full(sensorDataQueue)) {
             SensorDataUpdateMessage tmp;
             queue_remove_blocking(sensorDataQueue, &tmp);
