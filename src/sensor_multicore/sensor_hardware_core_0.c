@@ -18,6 +18,7 @@
 
 
 const uint ONBOARD_LED_PIN = 25;
+const bool DEBUG_SENSOR_UPDATE = false;
 
 // Queue used for sending sensor updates from core0 to core1
 queue_t sensorUpdateQueue;
@@ -39,21 +40,6 @@ ShiftRegister _ledShifter = {
     .mType = SIPO_SHIFT_REGISTER
 };
 
-// I2C bus controller
-I2CInterface _i2cInterface = {
-    .mI2C = SENSOR_I2C,
-    .mBaud = SENSOR_I2C_BAUDRATE,
-    .mSDA = SENSOR_I2C_SDA,
-    .mSCL = SENSOR_I2C_SCL,
-    .mMultiplexerAddress = DEFAULT_MULTIPLEXER_ADDRESS,
-    .mChannelConnectRegister = {
-        .mDataPin = PISO_DATA_PIN,
-        .mLatchPin = PISO_LATCH_PIN,
-        .mClockPin = PISO_CLOCK_PIN,
-        .mType = PISO_SHIFT_REGISTER
-    }
-};
-
 void update_sensor_status_indicators(ShiftRegister *shiftRegister, Sensor* sensors, uint8_t numSensors) {
     for(int i = 0; i < numSensors; ++i) {
         bool ledOn = (sensors[i].mCurrentSensorData.mSensorStatus == SENSOR_CONNECTED_VALID_DATA);
@@ -72,12 +58,8 @@ int main() {
     gpio_set_dir(ONBOARD_LED_PIN, GPIO_OUT);
     gpio_put(ONBOARD_LED_PIN, 0);
 
-    // Initialize sensors
-    initialize_sensors(
-        sensorsList, 
-        NUM_SENSORS,
-        &_i2cInterface
-    );
+    // Initialize the I2C interface
+    init_sensor_bus(&sensorI2CInterface);
 
     // Initialize status LEDs
     init_shift_register(&_ledShifter);
@@ -94,18 +76,18 @@ int main() {
     // core0 execution loop
     DEBUG_PRINT("Sensor initialization complete\n");
     while(1) {
+        update_connection_status(&sensorI2CInterface);
+
         // Update sensor readings
         DEBUG_PRINT("Update sensors\n");
-        update_sensor_readings(sensorsList, NUM_SENSORS);
+        update_sensors(sensorsList, NUM_SENSORS, DEBUG_SENSOR_UPDATE);
 
         // Update sensor LED indicators
         DEBUG_PRINT("Update LEDs\n");
         update_sensor_status_indicators(&_ledShifter, sensorsList, NUM_SENSORS);
 
         // Push sensor updates to core 1
-        for(int i = 0; i < NUM_SENSORS; ++i) {
-            push_sensor_data_to_queue(&sensorUpdateQueue, &sensorsList[i]);
-        }
+        push_sensor_data_to_queue(&sensorUpdateQueue, sensorsList);
 
         // Chill
         sleep_ms(1);

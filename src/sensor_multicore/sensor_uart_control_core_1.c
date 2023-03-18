@@ -10,7 +10,6 @@ extern ControllerInterface _sensorControllerInterface;
 
 void sensor_controller_core_main() {
     // Transmit "ready" message on core startup
-    DEBUG_PRINT("Sensor controller core ready\n");
     send_controller_ready(&_sensorControllerInterface);
 
     // Main execution loop
@@ -22,7 +21,6 @@ void sensor_controller_core_main() {
         );
 
         // Secondly, handle any incoming controller commands
-        DEBUG_PRINT("Update serial\n");
         update_uart_sensor_controller(&_sensorControllerInterface);
     }
 }

@@ -13,6 +13,8 @@ bool initialize_sensor_pod(SensorPod *sensorPod) {
         return false;
     }
 
+    select_sensor_pod(sensorPod);
+
     char tmpSerial[SCD30_SERIAL_BYTE_SIZE];
 
     sensorPod->mSoilSensorActive = init_soil_sensor(sensorPod);
@@ -26,10 +28,12 @@ bool initialize_sensor_pod(SensorPod *sensorPod) {
     sensorPod->mCurrentData.mSoilSensorDataValid = false;
 }
 
-void update_sensor_pod_data(SensorPod *sensorPod) {
+void update_sensor_pod(SensorPod *sensorPod) {
     if(!sensorPod) {
         return;
     }
+
+    select_sensor_pod(sensorPod);
 
     // Read soil sensor
     sensorPod->mCurrentData.mSoilSensorDataValid = false;
@@ -46,4 +50,17 @@ void update_sensor_pod_data(SensorPod *sensorPod) {
         sensorPod->mCurrentData.mSCD30SensorData = get_scd30_reading(sensorPod);
         sensorPod->mCurrentData.mSCD30SensorDataValid = true;
     }
+}
+
+bool is_sensor_pod_connected(SensorPod *sensorPod) {
+    if(!sensorPod || !sensorPod->mInterface) {
+        return false;
+    }
+
+    return is_i2c_channel_connected(sensorPod->mInterface, sensorPod->mI2CChannel);
+}
+
+bool sensor_pod_has_valid_data(SensorPod *sensorPod) {
+    return (sensorPod->mCurrentData.mSoilSensorDataValid || sensorPod->mCurrentData.mSCD30SensorDataValid);
+
 }

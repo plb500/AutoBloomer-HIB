@@ -36,7 +36,10 @@ void data_update_entry_to_sensor_packet(SensorDataUpdate *dataUpdate, MsgPackSen
             break;
         
         case SENSOR_POD:
-            // TODO
+            sensorPacket->mCurrentSensorData.mSensorReadings[SENSOR_POD_CO2_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mSensorPodData.mSCD30SensorData.mCO2Reading;
+            sensorPacket->mCurrentSensorData.mSensorReadings[SENSOR_POD_TEMPERATURE_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mSensorPodData.mSCD30SensorData.mTemperatureReading;
+            sensorPacket->mCurrentSensorData.mSensorReadings[SENSOR_POD_RH_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mSensorPodData.mSCD30SensorData.mHumidityReading;
+            sensorPacket->mCurrentSensorData.mSensorReadings[SENSOR_POD_SOIL_MOISTURE_READING_INDEX].mValue.mIntValue = dataUpdate->mSensorData.mSensorReading.mSensorPodData.mSoilSensorData;
             break;
     }
 }

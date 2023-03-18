@@ -1,5 +1,20 @@
 #include "sensor_definitions.h" 
 
+// I2C bus controller
+I2CInterface sensorI2CInterface = {
+    .mI2C = SENSOR_I2C,
+    .mBaud = SENSOR_I2C_BAUDRATE,
+    .mSDA = SENSOR_I2C_SDA,
+    .mSCL = SENSOR_I2C_SCL,
+    .mMultiplexerAddress = DEFAULT_MULTIPLEXER_ADDRESS,
+    .mChannelConnectRegister = {
+        .mDataPin = PISO_DATA_PIN,
+        .mLatchPin = PISO_LATCH_PIN,
+        .mClockPin = PISO_CLOCK_PIN,
+        .mType = PISO_SHIFT_REGISTER
+    }
+};
+
 SonarPIOWrapper PIO_WRAPPER = {
     .mPIO = pio0,
     .mInitialized = false
@@ -29,7 +44,7 @@ Sensor sensorsList[NUM_SENSORS] = {
                 .mSonarSensor = {
                     .mTXPin = SONAR_SENSOR_TX_R1,
                     .mRXPin = SONAR_SENSOR_RX_R1,
-                    .mJackDetectPin = SONAR_SENSOR_L2_JACK_DETECT_PIN,
+                    .mJackDetectPin = SONAR_SENSOR_R1_JACK_DETECT_PIN,
                     .mBaudrate = SONAR_SENSOR_BAUDRATE,
                     .mStateMachineID = 1,
                     .mPIOWrapper = &PIO_WRAPPER
@@ -44,7 +59,7 @@ Sensor sensorsList[NUM_SENSORS] = {
         .mSensorDefinition = {                               
             .mSensor = {
                 .mSensorPod = {
-                    .mInterface = 0,
+                    .mInterface = &sensorI2CInterface,
                     .mI2CChannel = I2C_CHANNEL_0,
                     .mSCD30Address = SCD30_I2C_ADDRESS,
                     .mSoilSensorAddress = SOIL_SENSOR_3_ADDRESS,
@@ -59,7 +74,7 @@ Sensor sensorsList[NUM_SENSORS] = {
         .mSensorDefinition = {                               
             .mSensor = {
                 .mSensorPod = {
-                    .mInterface = 0,
+                    .mInterface = &sensorI2CInterface,
                     .mI2CChannel = I2C_CHANNEL_7,
                     .mSCD30Address = SCD30_I2C_ADDRESS,
                     .mSoilSensorAddress = SOIL_SENSOR_2_ADDRESS,
@@ -182,7 +197,7 @@ MsgPackSensorPacket sensorPackets[NUM_SENSORS] = {
         },
         .mCurrentSensorData = {
             .mStatus = SENSOR_DISCONNECTED,
-            .mNumReadings = 1,
+            .mNumReadings = 4,
             .mSensorReadings = (MsgPackSensorReading[4]) {
                 {
                     .mDescription = &MPACK_CO2_READING_DESCRIPTION,
@@ -223,7 +238,7 @@ MsgPackSensorPacket sensorPackets[NUM_SENSORS] = {
         },
         .mCurrentSensorData = {
             .mStatus = SENSOR_DISCONNECTED,
-            .mNumReadings = 1,
+            .mNumReadings = 4,
             .mSensorReadings = (MsgPackSensorReading[4]) {
                 {
                     .mDescription = &MPACK_CO2_READING_DESCRIPTION,

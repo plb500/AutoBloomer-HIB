@@ -18,14 +18,14 @@ typedef struct {
 
 // I2C multiplexer channel definitions
 typedef enum {
-    I2C_CHANNEL_0 = (1 << 0),
-    I2C_CHANNEL_1 = (1 << 1),
-    I2C_CHANNEL_2 = (1 << 2),
-    I2C_CHANNEL_3 = (1 << 3),
-    I2C_CHANNEL_4 = (1 << 4),
-    I2C_CHANNEL_5 = (1 << 5),
-    I2C_CHANNEL_6 = (1 << 6),
-    I2C_CHANNEL_7 = (1 << 7),
+    I2C_CHANNEL_0 = 0,
+    I2C_CHANNEL_1 = 1,
+    I2C_CHANNEL_2 = 2,
+    I2C_CHANNEL_3 = 3,
+    I2C_CHANNEL_4 = 4,
+    I2C_CHANNEL_5 = 5,
+    I2C_CHANNEL_6 = 6,
+    I2C_CHANNEL_7 = 7,
 
     NO_I2C_CHANNEL = -1
 } I2CChannel;
@@ -33,6 +33,7 @@ typedef enum {
 
 void init_sensor_bus(I2CInterface *i2cInterface);
 void update_connection_status(I2CInterface *i2cInterface);
+bool is_i2c_channel_connected(I2CInterface *i2cInterface, I2CChannel channel);
 bool select_i2c_channel(I2CInterface *i2cInterface, I2CChannel channel);
 bool check_i2c_address(I2CInterface *i2cInterface, const uint8_t address);
 bool write_i2c_data(

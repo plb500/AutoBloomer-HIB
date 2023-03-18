@@ -50,7 +50,7 @@ static const int SENSOR_CONTROLLER_BAUDRATE             = 57600;
 #define STDIO_UART                                      (uart0)
 static const uint8_t UART_TX                            = 12;
 static const uint8_t UART_RX                            = 13;
-static const int STDIO_UART_BAUDRATE                    = 19200;
+static const int STDIO_UART_BAUDRATE                    = 57600;
 
 // I/O Shift register pins
 static const uint8_t PISO_LATCH_PIN                     = 21;

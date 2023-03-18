@@ -10,7 +10,7 @@
 
 #define ARGUMENT_LENGTH         (8)
 #define COMMAND_LENGTH          (ARGUMENT_LENGTH + 1 + 1)   // Argument bytes +1 byte for command ID and +1 byte for checksum
-#define MPACK_OUT_BUFFER_SIZE   (512)
+#define MPACK_OUT_BUFFER_SIZE   (1024)
 
 
 // States in which the incoming command buffer can be

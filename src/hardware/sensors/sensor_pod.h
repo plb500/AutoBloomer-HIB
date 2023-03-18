@@ -45,7 +45,9 @@ typedef enum {
 
 bool select_sensor_pod(SensorPod *sensorPod);
 bool initialize_sensor_pod(SensorPod *sensorPod);
-void update_sensor_pod_data(SensorPod *sensorPod);
+void update_sensor_pod(SensorPod *sensorPod);
+bool is_sensor_pod_connected(SensorPod *sensorPod);
+bool sensor_pod_has_valid_data(SensorPod *sensorPod);
 
 // Soil sensor functions
 bool init_soil_sensor(SensorPod *sensorPod);

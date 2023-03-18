@@ -23,6 +23,14 @@ void update_connection_status(I2CInterface *i2cInterface) {
     read_shift_register_states(&i2cInterface->mChannelConnectRegister);
 }
 
+bool is_i2c_channel_connected(I2CInterface *i2cInterface, I2CChannel channel) {
+    if(channel == NO_I2C_CHANNEL) {
+        return false;
+    }
+
+    return get_shift_register_state(&i2cInterface->mChannelConnectRegister, channel);
+}
+
 bool select_i2c_channel(I2CInterface *i2cInterface, I2CChannel channel) {
     if(i2cInterface->mMultiplexerAddress < 0) {
         return false;
@@ -32,7 +40,7 @@ bool select_i2c_channel(I2CInterface *i2cInterface, I2CChannel channel) {
         return false;
     }
 
-    uint8_t data = (uint8_t) channel;
+    uint8_t data = (uint8_t) (1 << channel);
 
     int bytesWritten = i2c_write_blocking(i2cInterface->mI2C, i2cInterface->mMultiplexerAddress, &data, 1, I2C_NOSTOP);
     return (bytesWritten == 1);

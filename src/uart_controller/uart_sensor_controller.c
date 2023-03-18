@@ -92,7 +92,7 @@ void handle_calibrate_sensor_command(
     int numSensors, 
     uint8_t *calibrationValueBytes
 ) {
-    // TODO: This whole function needs to be rethunk and rewritten
+    // TODO: This whole function needs to be rethunk and rewritten/ditched
 
     MsgPackCalibrationValue calibration = unpack_calibration_value(calibrationValueBytes, ARGUMENT_LENGTH);
 
@@ -143,7 +143,6 @@ void handle_sensor_controller_command(
             // handle_send_sensor_data_command(sensorID);
             break;
         case GET_SENSORS_READY:
-            DEBUG_PRINT("SENDING READY\n");
             send_controller_ready(controllerInterface);
             break;
         case CALIBRATE_SENSOR:
@@ -258,8 +257,6 @@ void init_sensor_controller(
     gpio_set_function(rxPin, GPIO_FUNC_UART);
 
     reset_controller_interface(controllerInterface, true);
-
-    DEBUG_PRINT("Sensor Controller Ready!\n");
 }
 
 // Transmit a single packet signalling the system is ready for data

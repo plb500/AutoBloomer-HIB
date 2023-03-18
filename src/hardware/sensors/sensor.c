@@ -5,6 +5,13 @@
 
 #include "debug_io.h"
 
+void initialize_sensor_jack_detect_pin(uint8_t pin);
+bool is_sensor_connected(Sensor *sensor);
+bool initialize_sensor_hardware(Sensor *sensor);
+void initialize_sensor_data(Sensor *sensor);
+void debug_sensors(Sensor *sensors, uint8_t numSensors);
+
+
 void initialize_sensor_jack_detect_pin(uint8_t pin) {
     gpio_init(pin);
     gpio_set_dir(pin, GPIO_IN);
@@ -12,25 +19,37 @@ void initialize_sensor_jack_detect_pin(uint8_t pin) {
 }
 
 bool is_sensor_connected(Sensor *sensor) {
-    // return !gpio_get(sensor->mSensorDefinition.mJackDetectPin);
-    // TODO:
-    return false;
+    bool connected = false;
+
+    switch(sensor->mSensorDefinition.mSensorType) {
+        case SONAR_SENSOR:
+            connected = !gpio_get(sensor->mSensorDefinition.mSensor.mSonarSensor.mJackDetectPin);
+            break;
+        
+        case SENSOR_POD:
+            connected = is_sensor_pod_connected(&sensor->mSensorDefinition.mSensor.mSensorPod);
+            break;
+    }
+
+    return connected;
 }
 
 bool initialize_sensor_hardware(Sensor *sensor) {
     bool initialized = false;
     
+    initialize_sensor_data(sensor);
+
     // Initialize underlying sensor hardware
     if(is_sensor_connected(sensor)) {
         switch(sensor->mSensorDefinition.mSensorType) {
             case SONAR_SENSOR:
+                initialize_sensor_jack_detect_pin(sensor->mSensorDefinition.mSensor.mSonarSensor.mJackDetectPin);
                 initialize_sonar_sensor(&sensor->mSensorDefinition.mSensor.mSonarSensor);
                 initialized = true;
                 break;
             
             case SENSOR_POD:
-                initialize_sensor_pod(&sensor->mSensorDefinition.mSensor.mSensorPod);
-                initialized = true;
+                initialized = initialize_sensor_pod(&sensor->mSensorDefinition.mSensor.mSensorPod);
                 break;
         }
     }
@@ -45,20 +64,6 @@ void initialize_sensor_data(Sensor *sensor) {
 
     sensor->mCurrentSensorData.mSensorStatus = SENSOR_DISCONNECTED;
 }
-void initialize_sensors(Sensor *sensors, uint8_t numSensors, I2CInterface *i2cInterface) {
-    // Initialize the I2C bus
-    init_sensor_bus(i2cInterface);
-
-    // Setup sensors
-    for(int i = 0; i < numSensors; ++i) {
-        // Initialize jack detect pin
-        if(sensors[i].mSensorDefinition.mSensorType == SONAR_SENSOR) {
-            initialize_sensor_jack_detect_pin(sensors[i].mSensorDefinition.mSensor.mSonarSensor.mJackDetectPin);
-        }
-        initialize_sensor_data(&sensors[i]);
-    }
-}
-
 void debug_sensors(Sensor *sensors, uint8_t numSensors) {
     DEBUG_PRINT("Sensor Updates\n");
     DEBUG_PRINT("--------------\n");
@@ -87,7 +92,21 @@ void debug_sensors(Sensor *sensors, uint8_t numSensors) {
                     }
                     break;
                 case SENSOR_POD:
-                    // TODO
+                    DEBUG_PRINT("SCD30 data: ")
+                    if(sensor->mSensorDefinition.mSensor.mSensorPod.mCurrentData.mSCD30SensorDataValid) {
+                        DEBUG_PRINT("\n");
+                        DEBUG_PRINT("           CO2: %f ppm\n", sensor->mSensorDefinition.mSensor.mSensorPod.mCurrentData.mSCD30SensorData.mCO2Reading);
+                        DEBUG_PRINT("   Temperature: %f °C\n", sensor->mSensorDefinition.mSensor.mSensorPod.mCurrentData.mSCD30SensorData.mTemperatureReading);
+                        DEBUG_PRINT("            RH: %f \n", sensor->mSensorDefinition.mSensor.mSensorPod.mCurrentData.mSCD30SensorData.mHumidityReading);
+                    } else {
+                        DEBUG_PRINT("Invalid\n");
+                    }
+                    DEBUG_PRINT("Soil moisture data: ")
+                    if(sensor->mSensorDefinition.mSensor.mSensorPod.mCurrentData.mSoilSensorDataValid) {
+                        DEBUG_PRINT("%d\n", sensor->mSensorDefinition.mSensor.mSensorPod.mCurrentData.mSoilSensorData);
+                    } else {
+                        DEBUG_PRINT("Invalid\n");
+                    }
                     break;
             }
         } else {
@@ -97,21 +116,16 @@ void debug_sensors(Sensor *sensors, uint8_t numSensors) {
     DEBUG_PRINT("\n**************************************\n\n");
 }
 
-void update_sensor_readings(Sensor *sensors, uint8_t numSensors) {
+void update_sensors(Sensor *sensors, uint8_t numSensors, bool debugOutput) {
     float val;
 
     for(int i = 0; i < numSensors; ++i) {
         Sensor *sensor = &sensors[i];
         SensorData *sensorData = &sensor->mCurrentSensorData;
         memset(sensorData, 0, sizeof(SensorData));
-        // sensorData->mSensorID = sensor->mSensorID;
-        // sensorData->mType = sensor->mSensorType;
-
 
         // Check connection
         if(is_sensor_connected(sensor)) {
-            // sensorData->mIsSensorConnected = true;
-
             // If the sensor has just been connected, initialize its hardware
             if(!sensor->mHardwareInitialized) {
                 sensor->mHardwareInitialized = initialize_sensor_hardware(sensor);
@@ -136,6 +150,13 @@ void update_sensor_readings(Sensor *sensors, uint8_t numSensors) {
                     break;
 
                 case SENSOR_POD:
+                    update_sensor_pod(&sensor->mSensorDefinition.mSensor.mSensorPod);
+                    if(sensor_pod_has_valid_data(&sensor->mSensorDefinition.mSensor.mSensorPod)) {
+                        sensorData->mSensorReading.mSensorPodData = sensor->mSensorDefinition.mSensor.mSensorPod.mCurrentData;
+                        sensorData->mSensorStatus = SENSOR_CONNECTED_VALID_DATA;
+                    } else {
+                        sensorData->mSensorStatus = SENSOR_CONNECTED_MALFUNCTIONING;
+                    }
                     break;
             }
         } else {
@@ -145,5 +166,7 @@ void update_sensor_readings(Sensor *sensors, uint8_t numSensors) {
         }
     }
 
-    debug_sensors(sensors, numSensors);
+    if(debugOutput) {
+        debug_sensors(sensors, numSensors);
+    }
 }

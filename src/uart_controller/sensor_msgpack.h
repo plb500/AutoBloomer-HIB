@@ -76,10 +76,11 @@ typedef enum {
 } MsgPackReadingType;
 
 typedef enum {
-    SONAR_SENSOR_READING_INDEX          = 0,
-    MOISTURE_SENSOR_READING_INDEX       = 0,
-    DHT22_TEMPERATURE_READING_INDEX     = 0,
-    DHT22_HUMIDITY_READING_INDEX        = 1
+    SONAR_SENSOR_READING_INDEX              = 0,
+    SENSOR_POD_CO2_READING_INDEX            = 0,
+    SENSOR_POD_TEMPERATURE_READING_INDEX    = 1,
+    SENSOR_POD_RH_READING_INDEX             = 2,
+    SENSOR_POD_SOIL_MOISTURE_READING_INDEX  = 3,
 } ReadingIndex;
 
 // Union containing the actual underlying reading value

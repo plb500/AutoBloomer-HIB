@@ -51,9 +51,6 @@ static const uint16_t SONAR_SENSOR_MAX_VALUE    = 16000;
 static const float TEMP_SENSOR_MAX_VALUE        = 100.f;
 static const float RH_SENSOR_MAX_VALUE          = 100.f;
 
-bool is_sensor_connected(Sensor *sensor);
-void initialize_sensors(Sensor *sensors, uint8_t numSensors, I2CInterface *i2cInterface);
-void update_sensor_readings(Sensor *sensors, uint8_t numSensors);
-void update_sensor_indicators(Sensor **sensors, uint8_t numSensors);
+void update_sensors(Sensor *sensors, uint8_t numSensors, bool debugOutput);
 
 #endif      // SENSOR_H

@@ -15,10 +15,13 @@ typedef enum {
     NUM_SENSORS
 } SensorID;
 
-// Our list of actual sensor hardware
+// Sensor I2C bus interfaces
+extern I2CInterface sensorI2CInterface;
+
+// Our list of actual sensor hardware - used on core0 only
 extern Sensor sensorsList[NUM_SENSORS];
 
-// Data transmission wrappers for connected hardware 
+// Data transmission wrappers for connected hardware - used on core1 only
 extern MsgPackSensorPacket sensorPackets[NUM_SENSORS];
 
 #endif      // SENSOR_DEFINITIONS_H

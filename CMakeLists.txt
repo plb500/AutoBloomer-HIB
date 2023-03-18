@@ -4,17 +4,19 @@ project(PiFeederSensors C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
+
 add_executable(PiFeederSensors
     src/sensor_definitions.c
     
     src/mpack/mpack.c
     
-    src/hardware/push_button.c
-    src/hardware/led_shifter.c
+    src/hardware/sensors/scd30_sensor.c
+    src/hardware/sensors/sensor_i2c_interface.c
+    src/hardware/sensors/sensor_pod.c
     src/hardware/sensors/sensor.c
-    src/hardware/sensors/dht_sensor.c
-    src/hardware/sensors/stemma_soil_sensor.c
     src/hardware/sensors/sonar_sensor.c
+    src/hardware/sensors/stemma_soil_sensor.c
+    src/hardware/shift_register.c
 
     src/uart_controller/sensor_msgpack.c
     src/uart_controller/uart_sensor_controller.c
@@ -31,7 +33,6 @@ pico_enable_stdio_uart(PiFeederSensors 1)
 pico_add_extra_outputs(PiFeederSensors)
 include_directories(
     ${PROJECT_SOURCE_DIR}/src
-    ${PROJECT_SOURCE_DIR}/extern/hx711-pico-c
 )
 target_link_libraries(PiFeederSensors
     pico_stdlib
