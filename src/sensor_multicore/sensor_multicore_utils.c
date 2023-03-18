@@ -34,14 +34,9 @@ void data_update_entry_to_sensor_packet(SensorDataUpdate *dataUpdate, MsgPackSen
         case SONAR_SENSOR:
             sensorPacket->mCurrentSensorData.mSensorReadings[SONAR_SENSOR_READING_INDEX].mValue.mIntValue = dataUpdate->mSensorData.mSensorReading.mSonarSensorDistance;
             break;
-
-        case MOISTURE_SENSOR:
-            sensorPacket->mCurrentSensorData.mSensorReadings[MOISTURE_SENSOR_READING_INDEX].mValue.mIntValue = dataUpdate->mSensorData.mSensorReading.mMoistureSensorValue;
-            break;
-
-        case TEMP_HUMIDITY_SENSOR:
-            sensorPacket->mCurrentSensorData.mSensorReadings[DHT22_TEMPERATURE_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mTempHumidityData.mTemperatureC;
-            sensorPacket->mCurrentSensorData.mSensorReadings[DHT22_HUMIDITY_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mTempHumidityData.mRelativeHumidity;
+        
+        case SENSOR_POD:
+            // TODO
             break;
     }
 }

@@ -12,7 +12,9 @@ void initialize_sensor_jack_detect_pin(uint8_t pin) {
 }
 
 bool is_sensor_connected(Sensor *sensor) {
-    return !gpio_get(sensor->mSensorDefinition.mJackDetectPin);
+    // return !gpio_get(sensor->mSensorDefinition.mJackDetectPin);
+    // TODO:
+    return false;
 }
 
 bool initialize_sensor_hardware(Sensor *sensor) {
@@ -25,17 +27,10 @@ bool initialize_sensor_hardware(Sensor *sensor) {
                 initialize_sonar_sensor(&sensor->mSensorDefinition.mSensor.mSonarSensor);
                 initialized = true;
                 break;
-                
-            case TEMP_HUMIDITY_SENSOR:
-                init_DHT22(&sensor->mSensorDefinition.mSensor.mDHTSensor);
+            
+            case SENSOR_POD:
+                initialize_sensor_pod(&sensor->mSensorDefinition.mSensor.mSensorPod);
                 initialized = true;
-                break;
-
-            case MOISTURE_SENSOR:
-                initialized = soil_sensor_begin(&sensor->mSensorDefinition.mSensor.mMoistureSensor);
-                if(!initialized) {
-                    DEBUG_PRINT("ERROR INITIALIZING MOISURE SENSOR (%d)!\n", sensor->mSensorDefinition.mSensorID);
-                }
                 break;
         }
     }
@@ -50,15 +45,16 @@ void initialize_sensor_data(Sensor *sensor) {
 
     sensor->mCurrentSensorData.mSensorStatus = SENSOR_DISCONNECTED;
 }
-
-void initialize_sensors(Sensor *sensors, uint8_t numSensors, i2c_inst_t *i2c, const int baud, const int sdaPin, const int sclPin) {
+void initialize_sensors(Sensor *sensors, uint8_t numSensors, I2CInterface *i2cInterface) {
     // Initialize the I2C bus
-    init_sensor_bus(i2c, baud, sdaPin, sclPin);
+    init_sensor_bus(i2cInterface);
 
     // Setup sensors
     for(int i = 0; i < numSensors; ++i) {
         // Initialize jack detect pin
-        initialize_sensor_jack_detect_pin(sensors[i].mSensorDefinition.mJackDetectPin);
+        if(sensors[i].mSensorDefinition.mSensorType == SONAR_SENSOR) {
+            initialize_sensor_jack_detect_pin(sensors[i].mSensorDefinition.mSensor.mSonarSensor.mJackDetectPin);
+        }
         initialize_sensor_data(&sensors[i]);
     }
 }
@@ -90,21 +86,8 @@ void debug_sensors(Sensor *sensors, uint8_t numSensors) {
                             break;
                     }
                     break;
-                case TEMP_HUMIDITY_SENSOR:
-                    if(sensorData->mSensorReading.mTempHumidityData.mReadingError == NO_ERROR) {
-                        DEBUG_PRINT("temp %fC, rH %f%%\n", 
-                            sensorData->mSensorReading.mTempHumidityData.mTemperatureC,
-                            sensorData->mSensorReading.mTempHumidityData.mRelativeHumidity);
-                    } else {
-                        DEBUG_PRINT("r3Ad1nG 3rr0r\n");
-                    }
-                    break;
-                case MOISTURE_SENSOR:
-                    if(sensorData->mSensorReading.mMoistureSensorValue != -1) {
-                        DEBUG_PRINT("%d\n", sensorData->mSensorReading.mMoistureSensorValue);
-                    } else {
-                        DEBUG_PRINT("r3Ad1nG 3rr0r\n");
-                    }
+                case SENSOR_POD:
+                    // TODO
                     break;
             }
         } else {
@@ -152,22 +135,7 @@ void update_sensor_readings(Sensor *sensors, uint8_t numSensors) {
                     }
                     break;
 
-                case TEMP_HUMIDITY_SENSOR:
-                    read_DHT22(&sensor->mSensorDefinition.mSensor.mDHTSensor, &sensorData->mSensorReading.mTempHumidityData);
-                    if(sensorData->mSensorReading.mTempHumidityData.mReadingError == NO_ERROR) {
-                        sensorData->mSensorStatus = SENSOR_CONNECTED_VALID_DATA;
-                    } else {
-                        sensorData->mSensorStatus = SENSOR_CONNECTED_MALFUNCTIONING;
-                    }
-                    break;
-
-                case MOISTURE_SENSOR:
-                    sensorData->mSensorReading.mMoistureSensorValue = get_soil_sensor_capacitive_value(&sensor->mSensorDefinition.mSensor.mMoistureSensor);
-                    if(sensorData->mSensorReading.mMoistureSensorValue != -1) {
-                        sensorData->mSensorStatus = SENSOR_CONNECTED_VALID_DATA;
-                    } else {
-                        sensorData->mSensorStatus = SENSOR_CONNECTED_MALFUNCTIONING;
-                    }
+                case SENSOR_POD:
                     break;
             }
         } else {

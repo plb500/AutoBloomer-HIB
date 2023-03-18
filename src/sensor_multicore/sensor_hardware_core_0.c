@@ -3,8 +3,9 @@
 #include <string.h>
 
 #include "hardware/flash.h"
-#include "hardware/push_button.h"
-#include "hardware/led_shifter.h"
+#include "hardware/shift_register.h"
+#include "hardware/sensors/sensor_i2c_interface.h"
+
 #include "uart_controller/uart_sensor_controller.h"
 #include "sensor_uart_control_core_1.h"
 #include "sensor_multicore/sensor_multicore_utils.h"
@@ -31,19 +32,34 @@ ControllerInterface _sensorControllerInterface = {
 };
 
 // Connection LED controller
-LEDShifter _ledShifter = {
-    .mDataPin = SENSOR_CONNECT_LED_SHIFTER_DATA_PIN,
-    .mLatchPin = SENSOR_CONNECT_LED_SHIFTER_LATCH_PIN,
-    .mClockPin = SENSOR_CONNECT_LED_SHIFTER_CLOCK_PIN
+ShiftRegister _ledShifter = {
+    .mDataPin = SIPO_DATA_PIN,
+    .mLatchPin = SIPO_LATCH_PIN,
+    .mClockPin = SIPO_CLOCK_PIN,
+    .mType = SIPO_SHIFT_REGISTER
 };
 
+// I2C bus controller
+I2CInterface _i2cInterface = {
+    .mI2C = SENSOR_I2C,
+    .mBaud = SENSOR_I2C_BAUDRATE,
+    .mSDA = SENSOR_I2C_SDA,
+    .mSCL = SENSOR_I2C_SCL,
+    .mMultiplexerAddress = DEFAULT_MULTIPLEXER_ADDRESS,
+    .mChannelConnectRegister = {
+        .mDataPin = PISO_DATA_PIN,
+        .mLatchPin = PISO_LATCH_PIN,
+        .mClockPin = PISO_CLOCK_PIN,
+        .mType = PISO_SHIFT_REGISTER
+    }
+};
 
-void update_sensor_status_indicators(LEDShifter *ledShifter, Sensor* sensors, uint8_t numSensors) {
+void update_sensor_status_indicators(ShiftRegister *shiftRegister, Sensor* sensors, uint8_t numSensors) {
     for(int i = 0; i < numSensors; ++i) {
         bool ledOn = (sensors[i].mCurrentSensorData.mSensorStatus == SENSOR_CONNECTED_VALID_DATA);
-        set_led_state(ledShifter, sensors[i].mSensorDefinition.mSensorConnectLEDPosition, ledOn);
+        set_shift_register_state(shiftRegister, sensors[i].mSensorDefinition.mSensorConnectLEDPosition, ledOn);
     }
-    output_led_shifter_state(ledShifter);
+    write_shift_register_states(shiftRegister);
 }
 
 
@@ -60,14 +76,11 @@ int main() {
     initialize_sensors(
         sensorsList, 
         NUM_SENSORS,
-        SENSOR_I2C,
-        SENSOR_I2C_BAUDRATE,
-        MOISTURE_I2C_SDA,
-        MOISTURE_I2C_SCL
+        &_i2cInterface
     );
 
     // Initialize status LEDs
-    initialize_led_shifter(&_ledShifter);
+    init_shift_register(&_ledShifter);
 
     // Initialize cross-core queue
     intitialize_sensor_data_queue(&sensorUpdateQueue,(NUM_SENSORS * 4));

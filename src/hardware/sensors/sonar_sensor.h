@@ -22,6 +22,7 @@ typedef struct {
     const int mRXPin;
     const int mBaudrate;
     const uint mStateMachineID;
+    const uint8_t mJackDetectPin;
 
     SonarPIOWrapper *mPIOWrapper;
 

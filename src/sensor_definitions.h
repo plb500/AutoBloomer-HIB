@@ -7,12 +7,10 @@
 
 // Sensor IDs/array positions
 typedef enum {
-    SONAR_SENSOR_L_ID       = 0,
-    SONAR_SENSOR_R_ID       = 1,
-    TEMP_SENSOR_L_ID        = 2,
-    TEMP_SENSOR_R_ID        = 3,
-    MOISTURE_SENSOR_L_ID    = 4,
-    MOISTURE_SENSOR_R_ID    = 5,
+    SONAR_SENSOR_L1_ID      = 0,
+    SONAR_SENSOR_R1_ID      = 1,
+    SENSOR_POD_L_ID         = 2,
+    SENSOR_POD_R_ID         = 3,
 
     NUM_SENSORS
 } SensorID;
