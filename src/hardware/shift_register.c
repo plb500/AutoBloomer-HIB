@@ -56,7 +56,7 @@ void write_shift_register_states(ShiftRegister *shiftRegister) {
     sleep_us(1);
 
     // Clock each bit out individually
-    for(int bit = 0; bit < 8; ++bit) {
+    for(int bit = 7; bit >= 0; --bit) {
         gpio_put(shiftRegister->mClockPin, 0);
         sleep_us(1);
         gpio_put(shiftRegister->mDataPin, (shiftRegister->mCurrentValue & (1 << bit)));

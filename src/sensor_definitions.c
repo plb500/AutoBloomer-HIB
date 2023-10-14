@@ -103,7 +103,7 @@ MsgPackSensorReadingDescription MPACK_SONAR_READING_DESCRIPTION = {
 
 MsgPackSensorReadingDescription MPACK_CO2_READING_DESCRIPTION = {
     0,                                      // mReadingID
-    "CO2 (PPM)",                            // mReadingName
+    "Carbon Dioxide (PPM)",                 // mReadingName
     FLOAT_READING,                          // mType   
     {.mFloatValue=400.0f},                  // mMinValue
     {.mFloatValue=4000.0f}                  // mMaxValue
@@ -111,7 +111,7 @@ MsgPackSensorReadingDescription MPACK_CO2_READING_DESCRIPTION = {
 
 MsgPackSensorReadingDescription MPACK_TEMPERATURE_READING_DESCRIPTION = {
     1,                                      // mReadingID
-    "Temperature (C)",                      // mReadingName
+    "Temperature (°C)",                     // mReadingName
     FLOAT_READING,                          // mType   
     {.mFloatValue=10.0f},                   // mMinValue
     {.mFloatValue=65.0f}                    // mMaxValue
@@ -127,7 +127,7 @@ MsgPackSensorReadingDescription MPACK_HUMIDITY_READING_DESCRIPTION = {
 
 MsgPackSensorReadingDescription MPACK_SOIL_MOISTURE_READING_DESCRIPTION = {
     3,
-    "Moisture level",                       // mReadingName
+    "Soil Moisture",                        // mReadingName
     INT_READING,                            // mType   
     {.mIntValue=0},                         // mMinValue
     {.mIntValue=2000}                       // mMaxValue
