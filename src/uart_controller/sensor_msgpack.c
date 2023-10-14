@@ -26,6 +26,8 @@ const char *READING_DESCRIPTION_MAX_VALUE_KEY = "max_value";
 const char *SENSOR_DATA_NAME_KEY = "name";
 const char *SENSOR_DATA_STATUS_KEY = "sensor_status";
 const char *SENSOR_DATA_READINGS_KEY = "sensor_readings";
+const char *CURRENT_SENSOR_DATA_KEY = "current_sensor_data";
+
 
 // Calibration keys
 const char *SENSOR_CALIBRATION_PARAMS_KEY = "calibration";
@@ -231,14 +233,34 @@ void pack_calibration_parameters(const MsgPackSensorCalibrationParameters* const
     mpack_finish_map(writer);
 }
 
-PackResponse pack_sensor_data(const MsgPackSensorData * const sensorData, char* outBuf, size_t outBufSize) {
+void pack_sensor_data(const MsgPackSensorData * const sensorData, mpack_writer_t *writer) {
+    // Begin
+    mpack_start_map(writer, 2);
+
+    // Pack status
+    mpack_write_cstr(writer, SENSOR_DATA_STATUS_KEY);
+    mpack_write_u8(writer, sensorData->mStatus);
+
+    // Pack sensor readings
+    mpack_write_cstr(writer, SENSOR_DATA_READINGS_KEY);
+    mpack_start_array(writer, sensorData->mNumReadings);
+    for(int i = 0; i < sensorData->mNumReadings; ++i) {
+        pack_sensor_reading(&(sensorData->mSensorReadings[i]), writer);
+    }
+    mpack_finish_array(writer);
+
+    // Finish building the map
+    mpack_finish_map(writer);
+}
+
+PackResponse pack_sensor_packet(const MsgPackSensorPacket * const sensorPacket, char* outBuf, size_t outBufSize) {
     // Initialize writer
     PackResponse response;
     mpack_writer_t writer;
     mpack_writer_init(&writer, outBuf, outBufSize);
 
     // Write out sensor data
-    mpack_start_map(&writer, 6);
+    mpack_start_map(&writer, 5);
 
     // Pack packet ID
     mpack_write_cstr(&writer, PACKET_ID_KEY);
@@ -246,27 +268,19 @@ PackResponse pack_sensor_data(const MsgPackSensorData * const sensorData, char* 
 
     // Pack sensor ID
     mpack_write_cstr(&writer, SENSOR_ID_KEY);
-    mpack_write_u8(&writer, sensorData->mSensorID);
+    mpack_write_u8(&writer, sensorPacket->mSensorID);
 
     // Pack sensor name
     mpack_write_cstr(&writer, SENSOR_DATA_NAME_KEY);
-    mpack_write_cstr(&writer, sensorData->mSensorName);
-
-    // Pack sensor status
-    mpack_write_cstr(&writer, SENSOR_DATA_STATUS_KEY);
-    mpack_write_u8(&writer, sensorData->mStatus);
+    mpack_write_cstr(&writer, sensorPacket->mSensorName);
 
     // Pack calibration
     mpack_write_cstr(&writer, SENSOR_CALIBRATION_PARAMS_KEY);
-    pack_calibration_parameters(&(sensorData->mCalibrationParams), &writer);
+    pack_calibration_parameters(&(sensorPacket->mCalibrationParams), &writer);
 
     // Pack sensor readings
-    mpack_write_cstr(&writer, SENSOR_DATA_READINGS_KEY);
-    mpack_start_array(&writer, sensorData->mNumReadings);
-    for(int i = 0; i < sensorData->mNumReadings; ++i) {
-        pack_sensor_reading(&(sensorData->mSensorReadings[i]), &writer);
-    }
-    mpack_finish_array(&writer);
+    mpack_write_cstr(&writer, CURRENT_SENSOR_DATA_KEY);
+    pack_sensor_data(&sensorPacket->mCurrentSensorData, &writer);
 
     // Finish building the map
     mpack_finish_map(&writer);

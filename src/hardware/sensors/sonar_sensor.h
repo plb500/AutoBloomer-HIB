@@ -22,6 +22,7 @@ typedef struct {
     const int mRXPin;
     const int mBaudrate;
     const uint mStateMachineID;
+    const uint8_t mJackDetectPin;
 
     SonarPIOWrapper *mPIOWrapper;
 
@@ -32,7 +33,6 @@ typedef struct {
     uint16_t mCurrentDistance;
 } SonarSensor;
 
-void initialize_sonar_pio(SonarPIOWrapper* pioWrapper);
 void initialize_sonar_sensor(SonarSensor *sensor);
 void update_sonar_sensor(SonarSensor *sensor);
 

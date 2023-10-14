@@ -1,6 +1,7 @@
 #ifndef COMMAND_DEFINITIONS_H
 #define COMMAND_DEFINITIONS_H
 
+
 // Sensor commands
 typedef enum { 
     NO_COMMAND                  = 0x00,
@@ -18,14 +19,6 @@ typedef enum {
     HEARTBEAT                   = 0xFE,
     CONTROLLER_READY            = 0xFF
 } CommandResponseCode;
-
-
-// Describes the current sensor status
-typedef enum {
-    CONNECTED_WORKING           = 0x00,
-    CONNECTED_NOT_WORKING       = 0x01,
-    DISCONNECTED                = 0x02,
-} SensorStatus;
 
 
 // Incoming byte value definitions

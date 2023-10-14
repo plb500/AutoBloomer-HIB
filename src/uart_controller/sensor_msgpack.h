@@ -3,7 +3,8 @@
 
 #include <unistd.h>
 #include <stdbool.h>
-#include "sensor_controller/command_definitions.h"
+#include "hardware/sensors/sensor.h"
+#include "command_definitions.h"
 
 /**
  *              /------------------------------------\
@@ -75,10 +76,11 @@ typedef enum {
 } MsgPackReadingType;
 
 typedef enum {
-    SONAR_SENSOR_READING_INDEX          = 0,
-    MOISTURE_SENSOR_READING_INDEX       = 0,
-    DHT22_TEMPERATURE_READING_INDEX     = 0,
-    DHT22_HUMIDITY_READING_INDEX        = 1
+    SONAR_SENSOR_READING_INDEX              = 0,
+    SENSOR_POD_CO2_READING_INDEX            = 0,
+    SENSOR_POD_TEMPERATURE_READING_INDEX    = 1,
+    SENSOR_POD_RH_READING_INDEX             = 2,
+    SENSOR_POD_SOIL_MOISTURE_READING_INDEX  = 3,
 } ReadingIndex;
 
 // Union containing the actual underlying reading value
@@ -120,14 +122,18 @@ typedef struct {
 } MsgPackCalibrationValue;
 
 typedef struct {
-    uint8_t mSensorID;                                          // Unique sensor identification value
-    const char *mSensorName;                                    // Sensor name/description
     SensorStatus mStatus;                                       // Current status of sensor
-    MsgPackSensorCalibrationParameters mCalibrationParams;      // Calibration type
     int mNumReadings;                                           // How many individual reading types this sensor provides (i.e. size of below array)
     MsgPackSensorReading *mSensorReadings;                      // Each individual sensor reading
 } MsgPackSensorData;
 
+typedef struct {
+    uint8_t mSensorID;                                          // Unique sensor identification value
+    const char *mSensorName;                                    // Sensor name/description
+    SensorType mSensorType;                                     // The type of sensor this packet describes (is not transmitted)
+    MsgPackSensorCalibrationParameters mCalibrationParams;      // Calibration type
+    MsgPackSensorData mCurrentSensorData;                       // The current sensor data, plus reading definitions
+} MsgPackSensorPacket;
 
 typedef struct {
     SensorCommandIdentifier mCommandID;     // The command we are responding to
@@ -157,6 +163,6 @@ PackResponse pack_header_data(HeaderPacket headerPacket, char* outBuf, size_t ou
 PackResponse pack_terminator_packet(uint8_t terminatorCode, char* outBuf, size_t outBufSize);
 
 // Packs a data packet for a single sensor
-PackResponse pack_sensor_data(const MsgPackSensorData * const sensorData, char* outBuf, size_t outBufSize);
+PackResponse pack_sensor_packet(const MsgPackSensorPacket * const sensorPacket, char* outBuf, size_t outBufSize);
 
 #endif  // SENSOR_MSGPACK_H
