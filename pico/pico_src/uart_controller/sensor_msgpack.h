@@ -81,6 +81,7 @@ typedef enum {
     SENSOR_POD_TEMPERATURE_READING_INDEX    = 1,
     SENSOR_POD_RH_READING_INDEX             = 2,
     SENSOR_POD_SOIL_MOISTURE_READING_INDEX  = 3,
+    BATTERY_LEVEL_READING_INDEX             = 0
 } ReadingIndex;
 
 // Union containing the actual underlying reading value

@@ -27,7 +27,7 @@ void reset_shift_register(ShiftRegister *shiftRegister) {
 }
 
 void set_shift_register_state(ShiftRegister *shiftRegister, uint8_t pos, bool on) {
-    if(!shiftRegister || (shiftRegister->mType != SIPO_SHIFT_REGISTER)) {
+    if(!shiftRegister || (shiftRegister->mType != SIPO_SHIFT_REGISTER) || (pos >= 8)) {
         return;
     }
 

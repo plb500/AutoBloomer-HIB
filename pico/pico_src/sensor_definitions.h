@@ -11,6 +11,7 @@ typedef enum {
     SONAR_SENSOR_R1_ID      = 1,
     SENSOR_POD_L_ID         = 2,
     SENSOR_POD_R_ID         = 3,
+    RTC_BATTERY_SENSOR      = 4,
 
     NUM_SENSORS
 } SensorID;

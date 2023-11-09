@@ -43,8 +43,10 @@ ShiftRegister _ledShifter = {
 
 void update_sensor_status_indicators(ShiftRegister *shiftRegister, Sensor* sensors, uint8_t numSensors) {
     for(int i = 0; i < numSensors; ++i) {
-        bool ledOn = (sensors[i].mCurrentSensorData.mSensorStatus == SENSOR_CONNECTED_VALID_DATA);
-        set_shift_register_state(shiftRegister, sensors[i].mSensorDefinition.mSensorConnectLEDPosition, ledOn);
+        if(sensors[i].mSensorDefinition.mSensorConnectLEDPosition != NO_LED) {
+            bool ledOn = (sensors[i].mCurrentSensorData.mSensorStatus == SENSOR_CONNECTED_VALID_DATA);
+            set_shift_register_state(shiftRegister, sensors[i].mSensorDefinition.mSensorConnectLEDPosition, ledOn);
+        }
     }
     write_shift_register_states(shiftRegister);
 }

@@ -10,6 +10,7 @@ add_executable(PiFeederSensors
     
     pico_src/mpack/mpack.c
     
+    pico_src/hardware/sensors/battery_sensor.c
     pico_src/hardware/sensors/scd30_sensor.c
     pico_src/hardware/sensors/sensor_i2c_interface.c
     pico_src/hardware/sensors/sensor_pod.c
@@ -36,6 +37,7 @@ include_directories(
 )
 target_link_libraries(PiFeederSensors
     pico_stdlib
+    hardware_adc
     hardware_i2c
     hardware_uart
     hardware_pio

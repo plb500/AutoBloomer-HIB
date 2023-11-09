@@ -41,6 +41,10 @@ void data_update_entry_to_sensor_packet(SensorDataUpdate *dataUpdate, MsgPackSen
             sensorPacket->mCurrentSensorData.mSensorReadings[SENSOR_POD_RH_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mSensorPodData.mHumidity;
             sensorPacket->mCurrentSensorData.mSensorReadings[SENSOR_POD_SOIL_MOISTURE_READING_INDEX].mValue.mIntValue = dataUpdate->mSensorData.mSensorReading.mSensorPodData.mSoilSensorData;
             break;
+
+        case BATTERY_SENSOR:
+            sensorPacket->mCurrentSensorData.mSensorReadings[BATTERY_LEVEL_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mBatteryVoltage;
+            break;
     }
 }
 

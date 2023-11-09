@@ -4,16 +4,19 @@
 #include "sensor_i2c_interface.h"
 #include "sonar_sensor.h"
 #include "sensor_pod.h"
+#include "battery_sensor.h"
 
 
 typedef enum {
     SONAR_SENSOR            = 0,
-    SENSOR_POD              = 1
+    SENSOR_POD              = 1,
+    BATTERY_SENSOR          = 2
 } SensorType;
 
 typedef union {
-    SonarSensor         mSonarSensor;
-    SensorPod           mSensorPod;
+    SonarSensor             mSonarSensor;
+    SensorPod               mSensorPod;
+    BatteryVoltageSensor    mBatterySensor;
 } SensorHardware;
 
 typedef enum {
@@ -26,6 +29,7 @@ typedef enum {
 typedef union {
     uint16_t                mSonarSensorDistance;
     SensorPodData           mSensorPodData;
+    float                   mBatteryVoltage;
 } SensorReading;
 
 typedef struct {

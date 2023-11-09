@@ -67,7 +67,7 @@ Sensor sensorsList[NUM_SENSORS] = {
             },
             .mSensorType = SENSOR_POD,
             .mSensorID = SENSOR_POD_L_ID,
-            .mSensorConnectLEDPosition = SENSOR_POD_L_ACITVE_LED
+            .mSensorConnectLEDPosition = SENSOR_POD_L_ACTIVE_LED
         }
     },
     {
@@ -82,7 +82,20 @@ Sensor sensorsList[NUM_SENSORS] = {
             },
             .mSensorType = SENSOR_POD,
             .mSensorID = SENSOR_POD_R_ID,
-            .mSensorConnectLEDPosition = SENSOR_POD_R_ACITVE_LED
+            .mSensorConnectLEDPosition = SENSOR_POD_R_ACTIVE_LED
+        }
+    },
+    {
+        .mSensorDefinition = {                               
+            .mSensor = {
+                .mBatterySensor = {
+                    .mBatterySensePin = RTC_BATTERY_SENSE_PIN,
+                    .mADCInput = RTC_BATTERY_ADC_PORT
+                }
+            },
+            .mSensorType = BATTERY_SENSOR,
+            .mSensorID = RTC_BATTERY_SENSOR,
+            .mSensorConnectLEDPosition = NO_LED
         }
     }
 };
@@ -133,6 +146,14 @@ MsgPackSensorReadingDescription MPACK_SOIL_MOISTURE_READING_DESCRIPTION = {
     {.mIntValue=2000}                       // mMaxValue
 };
 
+MsgPackSensorReadingDescription MPACK_BATTERY_READING_DESCRIPTION = {
+    0,                                      // mReadingID
+    "Voltage",                              // mReadingName
+    FLOAT_READING,                          // mType   
+    {.mFloatValue=0.f},                     // mMinValue
+    {.mFloatValue=3.3f}                     // mMaxValue
+};
+
 
                         /////////////////////////////////////////////////
                         // Sensor data wrappers for connected hardware //
@@ -141,7 +162,7 @@ MsgPackSensorReadingDescription MPACK_SOIL_MOISTURE_READING_DESCRIPTION = {
 MsgPackSensorPacket sensorPackets[NUM_SENSORS] = {
     {
         .mSensorID = SONAR_SENSOR_L1_ID,
-        .mSensorName = "Sonar Sensor L1",
+        .mSensorName = "Feed Level Sensor L1",
         .mSensorType = SONAR_SENSOR,
         .mCalibrationParams = {
             .mIsCalibratable = false,
@@ -164,7 +185,7 @@ MsgPackSensorPacket sensorPackets[NUM_SENSORS] = {
     },
     {
         .mSensorID = SONAR_SENSOR_R1_ID,
-        .mSensorName = "Sonar Sensor R1",
+        .mSensorName = "Feed Level Sensor R1",
         .mSensorType = SONAR_SENSOR,
         .mCalibrationParams = {
             .mIsCalibratable = false,
@@ -264,6 +285,29 @@ MsgPackSensorPacket sensorPackets[NUM_SENSORS] = {
                         .mIntValue=0
                     }
                 },
+            }
+        }
+    },
+    {
+        .mSensorID = RTC_BATTERY_SENSOR,
+        .mSensorName = "RTC Battery",
+        .mSensorType = BATTERY_SENSOR,
+        .mCalibrationParams = {
+            .mIsCalibratable = false,
+            .mCalibrationValueType = FLOAT_READING,
+            .mCalibrationRangeMin = {.mFloatValue=0.f},
+            .mCalibrationRangeMax = {.mFloatValue=50.f}
+        },
+        .mCurrentSensorData = {
+            .mStatus = SENSOR_DISCONNECTED,
+            .mNumReadings = 1,
+            .mSensorReadings = (MsgPackSensorReading[1]) {
+                {
+                    .mDescription = &MPACK_BATTERY_READING_DESCRIPTION,
+                    .mValue = {
+                        .mFloatValue=0.f
+                    }
+                }    
             }
         }
     }

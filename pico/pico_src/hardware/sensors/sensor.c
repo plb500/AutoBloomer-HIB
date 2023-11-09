@@ -29,6 +29,10 @@ bool is_sensor_connected(Sensor *sensor) {
         case SENSOR_POD:
             connected = is_sensor_pod_connected(&sensor->mSensorDefinition.mSensor.mSensorPod);
             break;
+
+        case BATTERY_SENSOR:
+            connected = true;
+            break;
     }
 
     return connected;
@@ -50,6 +54,11 @@ bool initialize_sensor_hardware(Sensor *sensor) {
             
             case SENSOR_POD:
                 initialized = initialize_sensor_pod(&sensor->mSensorDefinition.mSensor.mSensorPod);
+                break;
+
+            case BATTERY_SENSOR:
+                initialize_battery_sensor(&sensor->mSensorDefinition.mSensor.mBatterySensor);
+                initialized = true;
                 break;
         }
     }
@@ -108,6 +117,9 @@ void debug_sensors(Sensor *sensors, uint8_t numSensors) {
                         DEBUG_PRINT("Invalid\n");
                     }
                     break;
+                case BATTERY_SENSOR:
+                    DEBUG_PRINT("RTC battery voltage: %fv\n", sensor->mSensorDefinition.mSensor.mBatterySensor.mCurrentVoltage);
+                    break;
             }
         } else {
             DEBUG_PRINT("    - DISCONNECTED\n");
@@ -158,6 +170,11 @@ void update_sensors(Sensor *sensors, uint8_t numSensors, bool debugOutput) {
                         sensorData->mSensorStatus = SENSOR_CONNECTED_MALFUNCTIONING;
                     }
                     break;
+
+                case BATTERY_SENSOR:
+                    update_battery_level(&sensor->mSensorDefinition.mSensor.mBatterySensor);
+                    sensorData->mSensorStatus = SENSOR_CONNECTED_VALID_DATA;
+                    sensorData->mSensorReading.mBatteryVoltage = sensor->mSensorDefinition.mSensor.mBatterySensor.mCurrentVoltage;
             }
         } else {
             // Sensor is disconnected, make sure all flags are in the invalid state
