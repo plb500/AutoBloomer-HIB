@@ -97,7 +97,6 @@ void push_sensor_data_to_queue(queue_t *sensorDataQueue, Sensor *sensors) {
 }
 
 void consume_update_queue_messages(queue_t *sensorUpdateQueue, MsgPackSensorPacket *sensorPackets) {
-    
     SensorDataUpdateMessage msgHolder;
     bool msgRead = false;
     bool haveMessage = false;

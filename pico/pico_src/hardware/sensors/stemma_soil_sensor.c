@@ -13,13 +13,13 @@ const uint8_t SEESAW_TOUCH_BASE             = 0x0F;
 const uint8_t SEESAW_TOUCH_CHANNEL_OFFSET   = 0x10;
 
 
-bool init_soil_sensor(I2CInterface *i2cInterface, uint8_t address) {
+I2CResponse init_soil_sensor(I2CInterface *i2cInterface, uint8_t address) {
     uint8_t response = 0x33;
 
     // Scan bus for device at given address
     bool found = false;
     for (int retries = 0; retries < 10; retries++) {
-        if (check_i2c_address(i2cInterface, address)) {
+        if (check_i2c_address(i2cInterface, address) == I2C_RESPONSE_OK) {
             found = true;
             break;
         }
@@ -27,13 +27,13 @@ bool init_soil_sensor(I2CInterface *i2cInterface, uint8_t address) {
     }
 
     if (!found) {
-        return false;
+        return I2C_RESPONSE_DEVICE_NOT_FOUND;
     }
 
     // Reset device
     found = false;
     for (int retries = 0; retries < 10; retries++) {
-        if (check_i2c_address(i2cInterface, address)) {
+        if (check_i2c_address(i2cInterface, address) == I2C_RESPONSE_OK) {
             found = true;
             break;
         }
@@ -41,7 +41,7 @@ bool init_soil_sensor(I2CInterface *i2cInterface, uint8_t address) {
     }
 
     if (!found) {
-        return false;
+        return I2C_RESPONSE_DEVICE_NOT_FOUND;
     }
 
     // Get hardware ID from device
@@ -55,10 +55,10 @@ bool init_soil_sensor(I2CInterface *i2cInterface, uint8_t address) {
         }
     }
 
-    return found;
+    return I2C_RESPONSE_OK;
 }
 
-bool reset_soil_sensor(I2CInterface *i2cInterface, uint8_t address) {
+I2CResponse reset_soil_sensor(I2CInterface *i2cInterface, uint8_t address) {
     const uint8_t resetBuffer[] = {
         0xFF
     };
@@ -69,7 +69,9 @@ bool reset_soil_sensor(I2CInterface *i2cInterface, uint8_t address) {
 uint32_t get_soil_sensor_version(I2CInterface *i2cInterface, uint8_t address) {
     uint8_t buf[4];
 
-    read_from_i2c_register(i2cInterface, address, SEESAW_STATUS_BASE, SEESAW_STATUS_VERSION, buf, 4, 100);
+    if(read_from_i2c_register(i2cInterface, address, SEESAW_STATUS_BASE, SEESAW_STATUS_VERSION, buf, 4, 100) != I2C_RESPONSE_OK) {
+        return 0xFFFFFFFF;
+    }
 
     return (((uint) buf[0] << 24) | 
             ((uint) buf[1] << 16) |
@@ -86,7 +88,7 @@ uint16_t get_soil_sensor_capacitive_value(I2CInterface *i2cInterface, uint8_t ad
     uint16_t ret = STEMMA_SOIL_SENSOR_INVALID_READING;
 
     for(uint8_t retry = 0; retry < NUM_RETRIES; retry++) {
-        if(read_from_i2c_register(
+        if((read_from_i2c_register(
             i2cInterface,
             address,
             SEESAW_TOUCH_BASE, 
@@ -94,7 +96,7 @@ uint16_t get_soil_sensor_capacitive_value(I2CInterface *i2cInterface, uint8_t ad
             buf, 
             READING_BUFFER_SIZE, 
             READ_DELAY_MS)
-        ) {
+        ) == I2C_RESPONSE_OK)  {
             ret = ((uint16_t) buf[0] << 8) | buf[1];
         }
     }

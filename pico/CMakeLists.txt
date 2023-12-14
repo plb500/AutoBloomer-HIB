@@ -5,6 +5,8 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
 
+string(APPEND CMAKE_EXE_LINKER_FLAGS "-Wl,--print-memory-usage")
+
 add_executable(PiFeederSensors
     pico_src/sensor_definitions.c
     

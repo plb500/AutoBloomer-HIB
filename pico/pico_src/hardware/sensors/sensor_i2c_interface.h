@@ -30,19 +30,32 @@ typedef enum {
     NO_I2C_CHANNEL = -1
 } I2CChannel;
 
+typedef enum {
+    I2C_RESPONSE_OK                 = 0,
+    I2C_RESPONSE_ERROR              = 1,
+    I2C_RESPONSE_TIMEOUT            = 2,
+    I2C_RESPONSE_INVALID_REQUEST    = 3,
+    I2C_RESPONSE_MALFORMED          = 4,
+    I2C_RESPONSE_INCOMPLETE         = 5,
+    I2C_RESPONSE_COMMAND_FAILED     = 6,
+    I2C_RESPONSE_DEVICE_NOT_FOUND   = 7
+}  I2CResponse;
 
 void init_sensor_bus(I2CInterface *i2cInterface);
+void shutdown_sensor_bus(I2CInterface *i2cInterface);
+void reset_sensor_bus(I2CInterface *i2cInterface);
 void update_connection_status(I2CInterface *i2cInterface);
 bool is_i2c_channel_connected(I2CInterface *i2cInterface, I2CChannel channel);
-bool select_i2c_channel(I2CInterface *i2cInterface, I2CChannel channel);
-bool check_i2c_address(I2CInterface *i2cInterface, const uint8_t address);
-bool write_i2c_data(
+I2CResponse reset_i2c_multiplexer(I2CInterface *i2cInterface);
+I2CResponse select_i2c_channel(I2CInterface *i2cInterface, I2CChannel channel);
+I2CResponse check_i2c_address(I2CInterface *i2cInterface, const uint8_t address);
+I2CResponse write_i2c_data(
     I2CInterface *i2cInterface, 
     const uint8_t address, 
     const uint8_t *buffer, 
     size_t bufferLen 
 );
-bool write_prefixed_i2c_data(
+I2CResponse write_prefixed_i2c_data(
     I2CInterface *i2cInterface, 
     const uint8_t address, 
     const uint8_t *prefixBuffer, 
@@ -50,7 +63,7 @@ bool write_prefixed_i2c_data(
     const uint8_t *buffer, 
     size_t bufferLen 
 );
-bool write_to_i2c_register(
+I2CResponse write_to_i2c_register(
     I2CInterface *i2cInterface, 
     const uint8_t address, 
     const uint8_t regHigh, 
@@ -58,13 +71,13 @@ bool write_to_i2c_register(
     const uint8_t *buffer, 
     const uint8_t bufferLen
 );
-bool read_from_i2c(
+I2CResponse read_from_i2c(
     I2CInterface *i2cInterface,
     const uint8_t address,
     uint8_t *buffer, 
     const uint8_t amountToRead
 );
-bool read_from_i2c_register(
+I2CResponse read_from_i2c_register(
     I2CInterface *i2cInterface,
     const uint8_t address,
     const uint8_t regHigh, 
