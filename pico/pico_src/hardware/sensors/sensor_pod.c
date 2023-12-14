@@ -58,10 +58,36 @@ bool initialize_sensor_pod(SensorPod *sensorPod) {
     return true;
 }
 
+bool reset_sensor_pod(SensorPod *sensorPod) {
+    static const uint16_t BOOT_DELAY_MS = 50;
+    if(!sensorPod) {
+        return false;
+    }
+
+    I2CResponse resetSoilSensorResponse = reset_soil_sensor(sensorPod->mInterface, sensorPod->mSoilSensorAddress);
+    I2CResponse resetSCDResponse = do_scd30_soft_reset(sensorPod->mInterface, sensorPod->mSCD30Address);
+    I2CResponse resetMultiplexerResponse = reset_i2c_multiplexer(sensorPod->mInterface);
+
+    sleep_ms(BOOT_DELAY_MS);
+
+    bool initResponse = initialize_sensor_pod(sensorPod);
+
+    return (
+        (resetSoilSensorResponse == I2C_RESPONSE_OK) &&
+        (resetSCDResponse == I2C_RESPONSE_OK) &&
+        (resetMultiplexerResponse == I2C_RESPONSE_OK) &&
+        initResponse
+    );
+}
+
+
 void update_sensor_pod(SensorPod *sensorPod) {
     if(!sensorPod) {
         return;
     }
+
+    bool gotSoilReading = false;
+    bool gotSCDReading = false;
 
     DEBUG_PRINT("      +- Selecting pod channel: 0x%02X...", sensorPod->mI2CChannel);
     I2CResponse selectResponse = select_sensor_pod(sensorPod);
@@ -78,6 +104,8 @@ void update_sensor_pod(SensorPod *sensorPod) {
         if(capValue != STEMMA_SOIL_SENSOR_INVALID_READING) {
             sensorPod->mCurrentData.mSoilSensorData = capValue;
             sensorPod->mCurrentData.mSoilSensorDataValid = true;
+
+            gotSoilReading = true;
             DEBUG_PRINT("done\n");
         } else {
             DEBUG_PRINT("INVALID\n");
@@ -100,6 +128,8 @@ void update_sensor_pod(SensorPod *sensorPod) {
                 sensorPod->mCurrentData.mTemperature = tmpData.mTemperatureReading;
                 sensorPod->mCurrentData.mHumidity = tmpData.mHumidityReading;
                 sensorPod->mCurrentData.mSCD30SensorDataValid = true;
+
+                gotSCDReading = true;
                 DEBUG_PRINT("done\n");
             } else {
                 sensorPod->mCurrentData.mSCD30SensorDataValid = false;
@@ -109,9 +139,21 @@ void update_sensor_pod(SensorPod *sensorPod) {
             DEBUG_PRINT("        +- SCD30 data not ready\n");
         }
     } else {
-        DEBUG_PRINT("      +- SCD30 inactive, initializing...");
+        DEBUG_PRINT("      +- SCD30 inactive, initializing...\n");
         initialize_scd30_connection(sensorPod);
-        DEBUG_PRINT("done\n");
+        DEBUG_PRINT("          done\n");
+    }
+
+    if(gotSoilReading && gotSCDReading) {
+        // Reset pod timeout
+        sensorPod->mPodResetTimeout = make_timeout_time_ms(SENSOR_POD_TIMEOUT_MS);
+        DEBUG_PRINT("      +- Good data!\n");
+    }
+
+    if(absolute_time_diff_us(sensorPod->mPodResetTimeout, get_absolute_time()) > 0) {
+        DEBUG_PRINT("      +- Pod timed out, resetting...");
+        reset_sensor_pod(sensorPod);
+        sensorPod->mPodResetTimeout = make_timeout_time_ms(SENSOR_POD_TIMEOUT_MS);
     }
 }
 

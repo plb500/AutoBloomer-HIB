@@ -32,6 +32,6 @@
     "sensor_i2c_interface.h": "c",
     "i2c.h": "c"
 },
-"cortex-debug.variableUseNaturalFormat": false,
+"cortex-debug.variableUseNaturalFormat": true,
 "C_Cpp.errorSquiggles": "Disabled"
 }

@@ -5,6 +5,7 @@
 
 
 #define SCD30_I2C_ADDRESS                       (0x61)
+#define SENSOR_POD_TIMEOUT_MS                   (5000)
 
 typedef enum {
     SOIL_SENSOR_1_ADDRESS = 0x36,
@@ -31,10 +32,12 @@ typedef struct {
     bool mSoilSensorActive;
     bool mSCD30SensorActive;
     SensorPodData mCurrentData;
+    absolute_time_t mPodResetTimeout;
 } SensorPod;
 
 
 bool initialize_sensor_pod(SensorPod *sensorPod);
+bool reset_sensor_pod(SensorPod *sensorPod);
 void update_sensor_pod(SensorPod *sensorPod);
 bool is_sensor_pod_connected(SensorPod *sensorPod);
 bool sensor_pod_has_valid_data(SensorPod *sensorPod);

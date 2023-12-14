@@ -22,7 +22,7 @@ const uint8_t CRC_LOOKUP[] = {
     0x82, 0xB3, 0xE0, 0xD1, 0x46, 0x77, 0x24, 0x15, 0x3B, 0x0A, 0x59, 0x68, 0xFF, 0xCE, 0x9D, 0xAC
 };
 
-const uint8_t READ_DELAY_MS                             = 4;
+const uint8_t READ_DELAY_MS                             = 10;
 
 const uint8_t MAX_SCD30_RESPONSE_WORDS                  = 16;   // Doesn't look like we'll ever receive more than 16 words in a single response
 const uint8_t SCD30_RESPONSE_WORD_SIZE                  = 2;
