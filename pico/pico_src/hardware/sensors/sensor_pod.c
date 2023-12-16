@@ -144,7 +144,9 @@ void update_sensor_pod(SensorPod *sensorPod) {
         DEBUG_PRINT("          done\n");
     }
 
-    if(gotSoilReading && gotSCDReading) {
+    // It's common for there to not be both readings available, so as long as we have at least one, we are
+    // good to reset the watchdog timer
+    if(gotSoilReading || gotSCDReading) {
         // Reset pod timeout
         sensorPod->mPodResetTimeout = make_timeout_time_ms(SENSOR_POD_TIMEOUT_MS);
         DEBUG_PRINT("      +- Good data!\n");
