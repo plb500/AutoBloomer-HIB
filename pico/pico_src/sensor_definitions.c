@@ -77,7 +77,7 @@ Sensor sensorsList[NUM_SENSORS] = {
                     .mInterface = &sensorI2CInterface,
                     .mI2CChannel = I2C_CHANNEL_7,
                     .mSCD30Address = SCD30_I2C_ADDRESS,
-                    .mSoilSensorAddress = SOIL_SENSOR_3_ADDRESS,
+                    .mSoilSensorAddress = SOIL_SENSOR_1_ADDRESS,
                 }
             },
             .mSensorType = SENSOR_POD,

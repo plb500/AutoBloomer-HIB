@@ -89,6 +89,13 @@ void update_sensor_pod(SensorPod *sensorPod) {
     bool gotSoilReading = false;
     bool gotSCDReading = false;
 
+    if(absolute_time_diff_us(sensorPod->mPodResetTimeout, get_absolute_time()) > 0) {
+        DEBUG_PRINT("      +- Pod timed out, resetting...");
+        reset_sensor_pod(sensorPod);
+        sensorPod->mPodResetTimeout = make_timeout_time_ms(SENSOR_POD_TIMEOUT_MS);
+        return;
+    }
+
     DEBUG_PRINT("      +- Selecting pod channel: 0x%02X...", sensorPod->mI2CChannel);
     I2CResponse selectResponse = select_sensor_pod(sensorPod);
     DEBUG_PRINT("done {%d}\n", selectResponse);
@@ -152,11 +159,6 @@ void update_sensor_pod(SensorPod *sensorPod) {
         DEBUG_PRINT("      +- Good data!\n");
     }
 
-    if(absolute_time_diff_us(sensorPod->mPodResetTimeout, get_absolute_time()) > 0) {
-        DEBUG_PRINT("      +- Pod timed out, resetting...");
-        reset_sensor_pod(sensorPod);
-        sensorPod->mPodResetTimeout = make_timeout_time_ms(SENSOR_POD_TIMEOUT_MS);
-    }
 }
 
 bool is_sensor_pod_connected(SensorPod *sensorPod) {
