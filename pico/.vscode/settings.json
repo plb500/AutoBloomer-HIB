@@ -30,7 +30,10 @@
     "sensor_msgpack.h": "c",
     "sensor_uart_control_core_1.h": "c",
     "sensor_i2c_interface.h": "c",
-    "i2c.h": "c"
+    "i2c.h": "c",
+    "sensor_definitions.h": "c",
+    "shift_register.h": "c",
+    "sensor.h": "c"
 },
 "cortex-debug.variableUseNaturalFormat": true,
 "C_Cpp.errorSquiggles": "Disabled"

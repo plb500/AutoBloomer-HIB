@@ -101,7 +101,7 @@ int main() {
     // core0 execution loop
     DEBUG_PRINT("Sensor initialization complete\n");
     while(1) {
-        update_connection_status(&sensorI2CInterface);
+        update_i2c_connection_status(&sensorI2CInterface);
 
         // Update sensor readings
         DEBUG_PRINT("Update sensors\n");

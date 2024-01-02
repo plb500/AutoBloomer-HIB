@@ -64,9 +64,10 @@ bool reset_sensor_pod(SensorPod *sensorPod) {
         return false;
     }
 
+    reset_sensor_bus(sensorPod->mInterface, false);
+
     I2CResponse resetSoilSensorResponse = reset_soil_sensor(sensorPod->mInterface, sensorPod->mSoilSensorAddress);
     I2CResponse resetSCDResponse = do_scd30_soft_reset(sensorPod->mInterface, sensorPod->mSCD30Address);
-    I2CResponse resetMultiplexerResponse = reset_i2c_multiplexer(sensorPod->mInterface);
 
     sleep_ms(BOOT_DELAY_MS);
 
@@ -75,7 +76,6 @@ bool reset_sensor_pod(SensorPod *sensorPod) {
     return (
         (resetSoilSensorResponse == I2C_RESPONSE_OK) &&
         (resetSCDResponse == I2C_RESPONSE_OK) &&
-        (resetMultiplexerResponse == I2C_RESPONSE_OK) &&
         initResponse
     );
 }

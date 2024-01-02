@@ -1,18 +1,23 @@
 #include "sensor_definitions.h" 
 
+I2CMultiplexer sensorI2CMultiplexer = {
+    .mMultiplexerAddress        = DEFAULT_MULTIPLEXER_ADDRESS,
+    .mResetPin                  = SENSOR_I2C_MULTIPLEXER_RESET,
+    .mChannelConnectRegister    = {
+        .mDataPin = PISO_DATA_PIN,
+        .mLatchPin = PISO_LATCH_PIN,
+        .mClockPin = PISO_CLOCK_PIN,
+        .mType = PISO_SHIFT_REGISTER
+    }
+};
+
 // I2C bus controller
 I2CInterface sensorI2CInterface = {
     .mI2C = SENSOR_I2C,
     .mBaud = SENSOR_I2C_BAUDRATE,
     .mSDA = SENSOR_I2C_SDA,
     .mSCL = SENSOR_I2C_SCL,
-    .mMultiplexerAddress = DEFAULT_MULTIPLEXER_ADDRESS,
-    .mChannelConnectRegister = {
-        .mDataPin = PISO_DATA_PIN,
-        .mLatchPin = PISO_LATCH_PIN,
-        .mClockPin = PISO_CLOCK_PIN,
-        .mType = PISO_SHIFT_REGISTER
-    }
+    .mMultiplexer = &sensorI2CMultiplexer
 };
 
 SonarPIOWrapper PIO_WRAPPER = {

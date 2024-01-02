@@ -29,6 +29,7 @@ typedef enum {
 static const uint SENSOR_I2C_BAUDRATE                   = (40 * 1000);
 static const uint8_t SENSOR_I2C_SDA                     = 10;
 static const uint8_t SENSOR_I2C_SCL                     = 11;
+static const uint8_t SENSOR_I2C_MULTIPLEXER_RESET       = 19;
 
 // Sonar (feed level) sensor data pins (outputs)
 static const uint8_t SONAR_SENSOR_RX_L1                  = 4;

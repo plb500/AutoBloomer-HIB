@@ -4,17 +4,8 @@
 #include "hardware/shift_register.h"
 #include "hardware/i2c.h"
 
-
 #define DEFAULT_MULTIPLEXER_ADDRESS     (0x70)
 
-typedef struct {
-    i2c_inst_t *mI2C;                           // The underlying I2C access struct
-    int mBaud;                                  // I2C baud rate
-    int mSDA;                                   // I2C SDA pin
-    int mSCL;                                   // I2C SCL pin
-    int8_t mMultiplexerAddress;                 // Address of I2C multiplexer (-1 if not connected via multiplexer)
-    ShiftRegister mChannelConnectRegister;      // For detecting which I2C channels are physically connected
-} I2CInterface;
 
 // I2C multiplexer channel definitions
 typedef enum {
@@ -30,6 +21,23 @@ typedef enum {
     NO_I2C_CHANNEL = -1
 } I2CChannel;
 
+
+typedef struct {
+    int8_t mMultiplexerAddress;                 // I2C Address pf the multiplexer device
+    int8_t mResetPin;                           // For resetting the TCA9548A chip
+    ShiftRegister mChannelConnectRegister;      // For detecting which I2C channels are physically connected
+} I2CMultiplexer;
+
+
+typedef struct {
+    i2c_inst_t *mI2C;                           // The underlying I2C access struct
+    int mBaud;                                  // I2C baud rate
+    int mSDA;                                   // I2C SDA pin
+    int mSCL;                                   // I2C SCL pin
+    I2CMultiplexer *mMultiplexer;      // NULL for no multiplexer (direct I2C connections)
+} I2CInterface;
+
+
 typedef enum {
     I2C_RESPONSE_OK                 = 0,
     I2C_RESPONSE_ERROR              = 1,
@@ -41,14 +49,15 @@ typedef enum {
     I2C_RESPONSE_DEVICE_NOT_FOUND   = 7
 }  I2CResponse;
 
+
+// Main interface functions
 void init_sensor_bus(I2CInterface *i2cInterface);
 void shutdown_sensor_bus(I2CInterface *i2cInterface);
-void reset_sensor_bus(I2CInterface *i2cInterface);
-void update_connection_status(I2CInterface *i2cInterface);
-bool is_i2c_channel_connected(I2CInterface *i2cInterface, I2CChannel channel);
-I2CResponse reset_i2c_multiplexer(I2CInterface *i2cInterface);
-I2CResponse select_i2c_channel(I2CInterface *i2cInterface, I2CChannel channel);
+void reset_sensor_bus(I2CInterface *i2cInterface, bool fullReset);
 I2CResponse check_i2c_address(I2CInterface *i2cInterface, const uint8_t address);
+I2CResponse select_i2c_channel(I2CInterface *i2cInterface, I2CChannel channel);
+bool is_i2c_channel_connected(I2CInterface *i2cInterface, I2CChannel channel);
+void update_i2c_connection_status(I2CInterface *i2cInterface);
 I2CResponse write_i2c_data(
     I2CInterface *i2cInterface, 
     const uint8_t address, 
