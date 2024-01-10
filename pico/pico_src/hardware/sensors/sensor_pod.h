@@ -5,7 +5,6 @@
 
 
 #define SCD30_I2C_ADDRESS                       (0x61)
-#define SENSOR_POD_TIMEOUT_MS                   (5000)
 
 typedef enum {
     SOIL_SENSOR_1_ADDRESS = 0x36,

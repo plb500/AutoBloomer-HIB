@@ -13,8 +13,9 @@ typedef struct {
     const uint8_t mLatchPin;
     const uint8_t mClockPin;
     const ShiftRegisterType mType;
+    const uint8_t mNumBits;
 
-    uint8_t mCurrentValue;
+    uint32_t mCurrentValue;
 } ShiftRegister;
 
 // Generic functions
@@ -23,11 +24,11 @@ void reset_shift_register(ShiftRegister *shiftRegister);
 
 // Write functions (SIPO shift register)
 void set_shift_register_state(ShiftRegister *shiftRegister, uint8_t pos, bool on);
-void set_shift_register_states(ShiftRegister *shiftRegister, uint8_t states);
+void set_shift_register_states(ShiftRegister *shiftRegister, uint32_t states);
 void write_shift_register_states(ShiftRegister *shiftRegister);
 
 // Read functions (PISO shift register)
 void read_shift_register_states(ShiftRegister *shiftRegister);
-bool get_shift_register_state(ShiftRegister *shiftRegister, uint8_t pos);
+bool get_shift_register_state(ShiftRegister *shiftRegister, uint16_t pos);
 
 #endif

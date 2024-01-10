@@ -4,6 +4,9 @@
 #include "scd30_sensor.h"
 #include "debug_io.h"
 
+#define SENSOR_POD_TIMEOUT_MS                   (5000)
+
+
 I2CResponse select_sensor_pod(SensorPod *sensorPod) {
     if(!sensorPod) {
         return false;
@@ -63,8 +66,6 @@ bool reset_sensor_pod(SensorPod *sensorPod) {
     if(!sensorPod) {
         return false;
     }
-
-    reset_sensor_bus(sensorPod->mInterface, false);
 
     I2CResponse resetSoilSensorResponse = reset_soil_sensor(sensorPod->mInterface, sensorPod->mSoilSensorAddress);
     I2CResponse resetSCDResponse = do_scd30_soft_reset(sensorPod->mInterface, sensorPod->mSCD30Address);
@@ -154,8 +155,9 @@ void update_sensor_pod(SensorPod *sensorPod) {
     // It's common for there to not be both readings available, so as long as we have at least one, we are
     // good to reset the watchdog timer
     if(gotSoilReading || gotSCDReading) {
-        // Reset pod timeout
+        // Reset pod and interface timeouts
         sensorPod->mPodResetTimeout = make_timeout_time_ms(SENSOR_POD_TIMEOUT_MS);
+        reset_interface_watchdog(sensorPod->mInterface);
         DEBUG_PRINT("      +- Good data!\n");
     }
 

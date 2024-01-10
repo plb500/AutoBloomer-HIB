@@ -27,7 +27,7 @@ void reset_shift_register(ShiftRegister *shiftRegister) {
 }
 
 void set_shift_register_state(ShiftRegister *shiftRegister, uint8_t pos, bool on) {
-    if(!shiftRegister || (shiftRegister->mType != SIPO_SHIFT_REGISTER) || (pos >= 8)) {
+    if(!shiftRegister || (shiftRegister->mType != SIPO_SHIFT_REGISTER) || (pos >= shiftRegister->mNumBits)) {
         return;
     }
 
@@ -38,7 +38,7 @@ void set_shift_register_state(ShiftRegister *shiftRegister, uint8_t pos, bool on
     }
 }
 
-void set_shift_register_states(ShiftRegister *shiftRegister, uint8_t states) {
+void set_shift_register_states(ShiftRegister *shiftRegister, uint32_t states) {
     if(!shiftRegister || (shiftRegister->mType != SIPO_SHIFT_REGISTER)) {
         return;
     }
@@ -56,7 +56,7 @@ void write_shift_register_states(ShiftRegister *shiftRegister) {
     sleep_us(1);
 
     // Clock each bit out individually
-    for(int bit = 7; bit >= 0; --bit) {
+    for(int bit = (shiftRegister->mNumBits - 1); bit >= 0; --bit) {
         gpio_put(shiftRegister->mClockPin, 0);
         sleep_us(1);
         gpio_put(shiftRegister->mDataPin, (shiftRegister->mCurrentValue & (1 << bit)));
@@ -84,7 +84,7 @@ void read_shift_register_states(ShiftRegister *shiftRegister) {
     sleep_us(1);
 
     // Shift input bits
-    for(int i = 7; i >= 0; --i) {
+    for(int i = (shiftRegister->mNumBits - 1); i >= 0; --i) {
         if(gpio_get(shiftRegister->mDataPin)) {
             shiftRegister->mCurrentValue |= (1 << i);
         }
@@ -98,7 +98,7 @@ void read_shift_register_states(ShiftRegister *shiftRegister) {
 }
 
 
-bool get_shift_register_state(ShiftRegister *shiftRegister, uint8_t pos) {
+bool get_shift_register_state(ShiftRegister *shiftRegister, uint16_t pos) {
     if(!shiftRegister || (shiftRegister->mType != PISO_SHIFT_REGISTER)) {
         return false;
     }

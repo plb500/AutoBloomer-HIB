@@ -38,7 +38,8 @@ ShiftRegister _ledShifter = {
     .mDataPin = SIPO_DATA_PIN,
     .mLatchPin = SIPO_LATCH_PIN,
     .mClockPin = SIPO_CLOCK_PIN,
-    .mType = SIPO_SHIFT_REGISTER
+    .mType = SIPO_SHIFT_REGISTER,
+    .mNumBits = 8
 };
 
 

@@ -7,7 +7,8 @@ I2CMultiplexer sensorI2CMultiplexer = {
         .mDataPin = PISO_DATA_PIN,
         .mLatchPin = PISO_LATCH_PIN,
         .mClockPin = PISO_CLOCK_PIN,
-        .mType = PISO_SHIFT_REGISTER
+        .mType = PISO_SHIFT_REGISTER,
+        .mNumBits = 8
     }
 };
 

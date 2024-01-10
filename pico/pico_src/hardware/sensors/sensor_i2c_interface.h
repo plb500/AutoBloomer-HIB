@@ -34,7 +34,8 @@ typedef struct {
     int mBaud;                                  // I2C baud rate
     int mSDA;                                   // I2C SDA pin
     int mSCL;                                   // I2C SCL pin
-    I2CMultiplexer *mMultiplexer;      // NULL for no multiplexer (direct I2C connections)
+    I2CMultiplexer *mMultiplexer;               // NULL for no multiplexer (direct I2C connections)
+    absolute_time_t mInterfaceResetTimeout;     // Watchdog timer for multiplexer/interface
 } I2CInterface;
 
 
@@ -57,6 +58,8 @@ void reset_sensor_bus(I2CInterface *i2cInterface, bool fullReset);
 I2CResponse check_i2c_address(I2CInterface *i2cInterface, const uint8_t address);
 I2CResponse select_i2c_channel(I2CInterface *i2cInterface, I2CChannel channel);
 bool is_i2c_channel_connected(I2CInterface *i2cInterface, I2CChannel channel);
+void reset_interface_watchdog(I2CInterface *i2cInterface);
+void check_interface_watchdog(I2CInterface *i2cInterface);
 void update_i2c_connection_status(I2CInterface *i2cInterface);
 I2CResponse write_i2c_data(
     I2CInterface *i2cInterface, 

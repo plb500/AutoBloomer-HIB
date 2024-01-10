@@ -10,6 +10,7 @@ bool is_sensor_connected(Sensor *sensor);
 bool initialize_sensor_hardware(Sensor *sensor);
 void initialize_sensor_data(Sensor *sensor);
 void debug_sensors(Sensor *sensors, uint8_t numSensors);
+I2CInterface* get_sensor_i2c(Sensor *sensor);
 
 
 void initialize_sensor_jack_detect_pin(uint8_t pin) {
@@ -128,6 +129,17 @@ void debug_sensors(Sensor *sensors, uint8_t numSensors) {
     DEBUG_PRINT("\n**************************************\n\n");
 }
 
+I2CInterface* get_sensor_i2c(Sensor *sensor) {
+    I2CInterface *i2cInterface = 0;
+
+    if(sensor && (sensor->mSensorDefinition.mSensorType == SENSOR_POD)) {
+        i2cInterface = sensor->mSensorDefinition.mSensor.mSensorPod.mInterface;
+    }
+
+    return i2cInterface;
+}
+
+
 void update_sensors(Sensor *sensors, uint8_t numSensors, bool debugOutput) {
     float val;
 
@@ -135,10 +147,13 @@ void update_sensors(Sensor *sensors, uint8_t numSensors, bool debugOutput) {
 
     for(int i = 0; i < numSensors; ++i) {
         Sensor *sensor = &sensors[i];
+
+        // First we should check to see if the I2C Interface for this sensor has gotten stuck
+        check_interface_watchdog(get_sensor_i2c(sensor));
+
+        // After a (potential) reset we should be good to try the sensor
         SensorData *sensorData = &sensor->mCurrentSensorData;
-
         DEBUG_PRINT("  +- Updating sensor %d (type: %d)\n", sensor->mSensorDefinition.mSensorID, sensor->mSensorDefinition.mSensorType);
-
         memset(sensorData, 0, sizeof(SensorData));
 
         // Check connection

@@ -26,7 +26,7 @@ typedef enum {
 
 // I2C sensors values
 #define SENSOR_I2C                                      (i2c1)
-static const uint SENSOR_I2C_BAUDRATE                   = (40 * 1000);
+static const uint SENSOR_I2C_BAUDRATE                   = (10 * 1000);
 static const uint8_t SENSOR_I2C_SDA                     = 10;
 static const uint8_t SENSOR_I2C_SCL                     = 11;
 static const uint8_t SENSOR_I2C_MULTIPLEXER_RESET       = 19;

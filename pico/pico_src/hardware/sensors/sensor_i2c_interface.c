@@ -1,7 +1,9 @@
 #include "sensor_i2c_interface.h"
 #include "hardware/gpio.h"
+#include "debug_io.h"
 
 #define DEFAULT_I2C_TIMEOUT_MS      (100)
+#define I2C_WATCHDOG_TIMEOUT_MS     (5000)
 const bool I2C_NOSTOP = false;
 
 
@@ -87,6 +89,7 @@ void init_sensor_bus(I2CInterface *i2cInterface) {
     gpio_pull_up(i2cInterface->mSCL);
 
     init_i2c_multiplexer_internal(i2cInterface->mMultiplexer);
+    i2cInterface->mInterfaceResetTimeout = make_timeout_time_ms(I2C_WATCHDOG_TIMEOUT_MS);
 }
 
 void shutdown_sensor_bus(I2CInterface *i2cInterface) {
@@ -120,6 +123,20 @@ I2CResponse select_i2c_channel(I2CInterface *i2cInterface, I2CChannel channel) {
 bool is_i2c_channel_connected(I2CInterface *i2cInterface, I2CChannel channel) {
     return is_i2c_channel_connected_internal(i2cInterface->mMultiplexer, channel);
 }
+
+void reset_interface_watchdog(I2CInterface *i2cInterface) {
+    if(i2cInterface) {
+        i2cInterface->mInterfaceResetTimeout = make_timeout_time_ms(I2C_WATCHDOG_TIMEOUT_MS);
+    }
+}
+
+void check_interface_watchdog(I2CInterface *i2cInterface) {
+    if(i2cInterface && (absolute_time_diff_us(i2cInterface->mInterfaceResetTimeout, get_absolute_time()) > 0)) {
+        DEBUG_PRINT("**** I2C interface timed out, resetting ****");
+        reset_sensor_bus(i2cInterface, true);
+    }
+}
+
 
 void update_i2c_connection_status(I2CInterface *i2cInterface) {
     return update_i2c_connection_status_internal(i2cInterface->mMultiplexer);
