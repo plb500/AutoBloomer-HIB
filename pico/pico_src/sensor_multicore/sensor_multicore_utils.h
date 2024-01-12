@@ -10,6 +10,6 @@
 // Queue management
 void intitialize_sensor_data_queue(queue_t *sensorDataQueue, int numMessages);
 void push_sensor_data_to_queue(queue_t *sensorDataQueue, Sensor *sensors);
-void transmit_update_queue_data(MQTTState *mqttState);
+void pull_mqtt_data_from_queue(MQTTState *mqttState);
 
 #endif

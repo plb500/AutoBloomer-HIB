@@ -8,11 +8,9 @@
 #include "pico/time.h"
 
 
-const uint16_t TIMEOUT_PERIOD_MS = 5000;
+const uint16_t MQTT_UPDATE_PERIOD_MS = 5000;
 
 extern queue_t sensorUpdateQueue;
-
-
 MQTTState mqttState = {
     .mqttClient = 0,
     .mSensorUpdateQueue = &sensorUpdateQueue
@@ -24,7 +22,7 @@ DNSResolutionRequest brokerRequest = {
 };
 
 void sensor_mqtt_client_core_main() {
-    connect_to_wifi(WIFI_SSID, WIFI_PASSWORD, "SensorController");
+    connect_to_wifi(WIFI_SSID, WIFI_PASSWORD, PICO_HOSTNAME);
     
     init_mqtt_state(&mqttState);
 
@@ -33,7 +31,7 @@ void sensor_mqtt_client_core_main() {
     while(1) {
         if(!is_network_connected()) {
             DEBUG_PRINT("Network is not connected, connecting....\n");
-            connect_to_wifi(WIFI_SSID, WIFI_PASSWORD, "SensorController");
+            connect_to_wifi(WIFI_SSID, WIFI_PASSWORD, PICO_HOSTNAME);
         }
 
         absolute_time_t now = get_absolute_time();
@@ -51,8 +49,8 @@ void sensor_mqtt_client_core_main() {
                 }
 
                 if(mqtt_client_is_connected(mqttState.mqttClient)) {
-                    transmit_update_queue_data(&mqttState);
-                    timeout = make_timeout_time_ms(5000);
+                    pull_mqtt_data_from_queue(&mqttState);
+                    timeout = make_timeout_time_ms(MQTT_UPDATE_PERIOD_MS);
                 }
             }
         }

@@ -9,7 +9,7 @@
 // Max value will be 3.3v (internal ADC ref). Convert from 12-bit value to voltage.
 // Voltage is put through a voltage divider which halves the voltage
 const float ADC_CONVERSION_FACTOR = 0.001591464080024;      // Got this via actually measuring the pin voltage. There's some drop over the voltage divider
-const uint BATTERY_SAMPLE_PERIOD_MS = 2000;                 // Battery isn't going to be draining rapidly. Can measure once every couple of minutes
+const uint BATTERY_SAMPLE_PERIOD_MS = 300000;               // Battery isn't going to be draining rapidly. Can measure once every five minutes
 const uint BATTERY_CHARGE_PERIOD_MS = 20;                   // Time for capacitor to build up
 
 #define BATTERY_SAMPLE_COUNT_FACTOR     (3)                 // We'll take 8 (2^3) battery readings
@@ -47,7 +47,7 @@ bool battery_sensor_update(BatteryVoltageSensor *sensor) {
     // Handle our transition point
     switch(sensor->mCurrentState) {
         case BATTERY_SENSOR_SLEEPING:
-            // Time to start charging the capacitor, enable measurement circuit
+            // Enable measurement circuit
             gpio_put(sensor->mEnableSensePin, 0);
             sensor->mSensorTransitionTime = make_timeout_time_ms(BATTERY_CHARGE_PERIOD_MS);
             sensor->mCurrentState = BATTERY_SENSOR_CHARGING;

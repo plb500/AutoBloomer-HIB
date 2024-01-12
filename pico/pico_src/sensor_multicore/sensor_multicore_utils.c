@@ -2,13 +2,13 @@
 
 
 const char * const AUTOBLOOMER_TOPIC_NAME           = "AutoBloomer";
-const char * const SENSOR_STATUS_VALUE_STRINGS[]    = {
-    "Disconnected",
-    "Malfunctioning",
-    "Connected, no data",
-    "Connected, data ready"
-};
-
+const char * const SENSOR_STATUS_JSON_KEY           = "Status";
+const char * const FEED_LEVEL_JSON_KEY              = "Feed Level";
+const char * const CO2_LEVEL_JSON_KEY               = "CO2 Level";
+const char * const TEMPERATURE_JSON_KEY             = "Temperature";
+const char * const HUMIDITY_JSON_KEY                = "Humidity";
+const char * const SOIL_MOISTURE_JSON_KEY           = "Soil Moisture";
+const char * const BATTERY_LEVEL_JSON_KEY           = "Battery Level";
 
 typedef struct {
     uint8_t                 mSensorID;
@@ -36,6 +36,8 @@ void sensor_to_data_update(Sensor *sensor, SensorDataUpdate *dataUpdate) {
 }
 
 void data_update_to_mqtt_messages(SensorDataUpdate *dataUpdate, MQTTMessage *mqttMsg) {
+    char statusString[16];
+
     // Sanity check
     if(!dataUpdate || !mqttMsg) {
         return;
@@ -43,37 +45,38 @@ void data_update_to_mqtt_messages(SensorDataUpdate *dataUpdate, MQTTMessage *mqt
 
     const char *sensorName = dataUpdate->mSensorName;
     const char *sensorLocation = dataUpdate->mSensorLocation;
-    const char *sensorStatus = SENSOR_STATUS_VALUE_STRINGS[dataUpdate->mSensorData.mSensorStatus];
 
     snprintf(mqttMsg->mTopic, MQTT_MAX_TOPIC_LENGTH, "%s/%s/%s",
         AUTOBLOOMER_TOPIC_NAME,
         sensorLocation,
         sensorName
     );
+
+    snprintf(statusString, 16, "\"%s\":%d", SENSOR_STATUS_JSON_KEY, dataUpdate->mSensorData.mSensorStatus);
     
     switch(dataUpdate->mSensorType) {
         case SONAR_SENSOR:
-            snprintf(mqttMsg->mPayload, MQTT_MAX_PAYLOAD_LENGTH, "{\"status\":\"%s\", \"Feed level\":\"%d\"}",
-                sensorStatus,
+            snprintf(mqttMsg->mPayload, MQTT_MAX_PAYLOAD_LENGTH, "{%s, \"Feed level\":%d}",
+                statusString,
                 dataUpdate->mSensorData.mSensorReading.mSonarSensorDistance   
             );
             break;
         
         case SENSOR_POD:
             snprintf(mqttMsg->mPayload, MQTT_MAX_PAYLOAD_LENGTH, 
-                "{\"status\":\"%s\", \"CO2 level\":\"%.2fppm\", \"Temperature\":\"%.2fC\", \"RH\":\"%.2f%%\", \"Soil moisture\":\"%d\"}",
-                sensorStatus,
-                dataUpdate->mSensorData.mSensorReading.mSensorPodData.mCO2Level,
-                dataUpdate->mSensorData.mSensorReading.mSensorPodData.mTemperature,
-                dataUpdate->mSensorData.mSensorReading.mSensorPodData.mHumidity,
-                dataUpdate->mSensorData.mSensorReading.mSensorPodData.mSoilSensorData
+                "{%s, \"%s\":%.2f, \"%s\":%.2f, \"%s\":%.2f, \"%s\":%d}",
+                statusString,
+                CO2_LEVEL_JSON_KEY, dataUpdate->mSensorData.mSensorReading.mSensorPodData.mCO2Level,
+                TEMPERATURE_JSON_KEY, dataUpdate->mSensorData.mSensorReading.mSensorPodData.mTemperature,
+                HUMIDITY_JSON_KEY, dataUpdate->mSensorData.mSensorReading.mSensorPodData.mHumidity,
+                SOIL_MOISTURE_JSON_KEY, dataUpdate->mSensorData.mSensorReading.mSensorPodData.mSoilSensorData
             );
             break;
 
         case BATTERY_SENSOR:
-            snprintf(mqttMsg->mPayload, MQTT_MAX_PAYLOAD_LENGTH, "{\"status\":\"%s\", \"Battery level\":\"%.2fv\"}",
-                sensorStatus,
-                dataUpdate->mSensorData.mSensorReading.mBatteryVoltage
+            snprintf(mqttMsg->mPayload, MQTT_MAX_PAYLOAD_LENGTH, "{%s, \"%s\":%.2f}",
+                statusString,
+                BATTERY_LEVEL_JSON_KEY, dataUpdate->mSensorData.mSensorReading.mBatteryVoltage
             );
             break;
     }
@@ -115,7 +118,7 @@ void push_sensor_data_to_queue(queue_t *sensorDataQueue, Sensor *sensors) {
     } while(!added);
 }
 
-void transmit_update_queue_data(MQTTState *mqttState) {
+void pull_mqtt_data_from_queue(MQTTState *mqttState) {
     SensorDataUpdateMessage updateMsg;
     bool msgRead = false;
     bool haveMessage = false;
@@ -137,7 +140,6 @@ void transmit_update_queue_data(MQTTState *mqttState) {
             &mqttMsg
         );
 
-        publish_mqtt_data(mqttState, mqttMsg.mTopic, mqttMsg.mPayload);
+        publish_mqtt_message(mqttState, &mqttMsg);
     }
 }
-

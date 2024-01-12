@@ -16,6 +16,7 @@ string(APPEND CMAKE_EXE_LINKER_FLAGS "-Wl,--print-memory-usage")
 file(READ wifi_props/ssid SSID)
 file(READ wifi_props/key SSID_KEY)
 file(READ wifi_props/broker BROKER)
+set(PICO_HOSTNAME "SensorController" CACHE INTERNAL "Pico hostname")
 
 add_executable(AutoBloomer-HIB
     pico_src/sensor_definitions.c
@@ -48,6 +49,7 @@ target_compile_definitions(AutoBloomer-HIB PRIVATE
     WIFI_SSID=\"${SSID}\"
     WIFI_PASSWORD=\"${SSID_KEY}\"
     MQTT_BROKER=\"${BROKER}\"
+    PICO_HOSTNAME=\"${PICO_HOSTNAME}\"
 )
 
 target_include_directories(AutoBloomer-HIB PRIVATE

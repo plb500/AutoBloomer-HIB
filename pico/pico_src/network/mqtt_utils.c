@@ -69,8 +69,7 @@ void disconnect_from_broker(MQTTState *mqttState) {
     }
 }
 
-void mqtt_pub_request_cb(void *arg, err_t err) {
-}
+void mqtt_pub_request_cb(void *arg, err_t err) {}
 
 err_t publish_mqtt_data(MQTTState *mqttState, const char *topic, const char *payload) {
     err_t err;
