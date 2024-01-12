@@ -17,9 +17,6 @@ void init_i2c_multiplexer_internal(I2CMultiplexer *multiplexer) {
     gpio_set_dir(multiplexer->mResetPin, GPIO_OUT);
     gpio_pull_up(multiplexer->mResetPin);
 
-    // Initialise our connection detection
-    init_shift_register(&multiplexer->mChannelConnectRegister);
-
     // Set reset HIGH to enable multiplexer
     gpio_put(multiplexer->mResetPin, 1);
 }
@@ -33,26 +30,6 @@ void reset_i2c_multiplexer_internal(I2CMultiplexer *multiplexer) {
     gpio_put(multiplexer->mResetPin, 0);
     sleep_ms(2);
     gpio_put(multiplexer->mResetPin, 1);
-}
-
-void update_i2c_connection_status_internal(I2CMultiplexer *multiplexer) {
-    if(!multiplexer) {
-        return;
-    }
-
-    read_shift_register_states(&multiplexer->mChannelConnectRegister);
-}
-
-bool is_i2c_channel_connected_internal(I2CMultiplexer *multiplexer, I2CChannel channel) {
-    if(!multiplexer) {
-        return false;
-    }
-
-    if(channel == NO_I2C_CHANNEL) {
-        return false;
-    }
-
-    return get_shift_register_state(&multiplexer->mChannelConnectRegister, channel);
 }
 
 I2CResponse select_i2c_channel_internal(I2CInterface *i2cInterface, I2CMultiplexer *multiplexer, I2CChannel channel) {
@@ -120,10 +97,6 @@ I2CResponse select_i2c_channel(I2CInterface *i2cInterface, I2CChannel channel) {
     return select_i2c_channel_internal(i2cInterface, i2cInterface->mMultiplexer, channel);
 }
 
-bool is_i2c_channel_connected(I2CInterface *i2cInterface, I2CChannel channel) {
-    return is_i2c_channel_connected_internal(i2cInterface->mMultiplexer, channel);
-}
-
 void reset_interface_watchdog(I2CInterface *i2cInterface) {
     if(i2cInterface) {
         i2cInterface->mInterfaceResetTimeout = make_timeout_time_ms(I2C_WATCHDOG_TIMEOUT_MS);
@@ -137,10 +110,6 @@ void check_interface_watchdog(I2CInterface *i2cInterface) {
     }
 }
 
-
-void update_i2c_connection_status(I2CInterface *i2cInterface) {
-    return update_i2c_connection_status_internal(i2cInterface->mMultiplexer);
-}
 
 I2CResponse check_i2c_address(I2CInterface *i2cInterface, const uint8_t address) {
     absolute_time_t timeout = make_timeout_time_ms(DEFAULT_I2C_TIMEOUT_MS);

@@ -6,6 +6,7 @@
 #include "hardware/flash.h"
 #include "hardware/shift_register.h"
 #include "hardware/sensors/sensor_i2c_interface.h"
+#include "hardware/connected_hardware_monitor.h"
 
 #include "uart_controller/uart_sensor_controller.h"
 #include "sensor_uart_control_core_1.h"
@@ -40,6 +41,16 @@ ShiftRegister _ledShifter = {
     .mClockPin = SIPO_CLOCK_PIN,
     .mType = SIPO_SHIFT_REGISTER,
     .mNumBits = 8
+};
+
+ConnectedHardwareMonitor _connectedHardwareMonitor = {
+    .mConnectedHardwareRegister = {
+        .mDataPin = HARDWARE_CONNECT_SR_DATA_PIN,
+        .mLatchPin = HARDWARE_CONNECT_SR_LATCH_PIN,
+        .mClockPin = HARDWARE_CONNECT_SR_CLOCK_PIN,
+        .mType = PISO_SHIFT_REGISTER,
+        .mNumBits = 16
+    }
 };
 
 
@@ -83,6 +94,9 @@ int main() {
     // Initialize status LEDs
     init_shift_register(&_ledShifter);
 
+    // Initialize hardware connection monitor
+    init_connected_hardware_monitor(&_connectedHardwareMonitor);
+
     // Initialize cross-core queue
     intitialize_sensor_data_queue(&sensorUpdateQueue,(NUM_SENSORS * 4));
 
@@ -102,12 +116,12 @@ int main() {
     // core0 execution loop
     DEBUG_PRINT("Sensor initialization complete\n");
     while(1) {
-        update_i2c_connection_status(&sensorI2CInterface);
+        update_connected_hardware_monitor(&_connectedHardwareMonitor);
 
         // Update sensor readings
         DEBUG_PRINT("Update sensors\n");
         gpio_put(ONBOARD_LED_PIN, false);
-        update_sensors(sensorsList, NUM_SENSORS, DEBUG_SENSOR_UPDATE);
+        update_sensors(sensorsList, NUM_SENSORS, DEBUG_SENSOR_UPDATE, &_connectedHardwareMonitor);
         gpio_put(ONBOARD_LED_PIN, true);
 
         // Update sensor LED indicators

@@ -20,6 +20,7 @@ add_executable(PiFeederSensors
     pico_src/hardware/sensors/sonar_sensor.c
     pico_src/hardware/sensors/stemma_soil_sensor.c
     pico_src/hardware/shift_register.c
+    pico_src/hardware/connected_hardware_monitor.c
 
     pico_src/uart_controller/sensor_msgpack.c
     pico_src/uart_controller/uart_sensor_controller.c

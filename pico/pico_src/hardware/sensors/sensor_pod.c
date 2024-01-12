@@ -163,14 +163,6 @@ void update_sensor_pod(SensorPod *sensorPod) {
 
 }
 
-bool is_sensor_pod_connected(SensorPod *sensorPod) {
-    if(!sensorPod || !sensorPod->mInterface) {
-        return false;
-    }
-
-    return is_i2c_channel_connected(sensorPod->mInterface, sensorPod->mI2CChannel);
-}
-
 bool sensor_pod_has_valid_data(SensorPod *sensorPod) {
     return (sensorPod->mCurrentData.mSoilSensorDataValid || sensorPod->mCurrentData.mSCD30SensorDataValid);
 }

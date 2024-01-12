@@ -38,7 +38,6 @@ typedef struct {
 bool initialize_sensor_pod(SensorPod *sensorPod);
 bool reset_sensor_pod(SensorPod *sensorPod);
 void update_sensor_pod(SensorPod *sensorPod);
-bool is_sensor_pod_connected(SensorPod *sensorPod);
 bool sensor_pod_has_valid_data(SensorPod *sensorPod);
 
 

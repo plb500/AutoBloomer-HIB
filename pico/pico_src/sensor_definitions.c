@@ -3,13 +3,6 @@
 I2CMultiplexer sensorI2CMultiplexer = {
     .mMultiplexerAddress        = DEFAULT_MULTIPLEXER_ADDRESS,
     .mResetPin                  = SENSOR_I2C_MULTIPLEXER_RESET,
-    .mChannelConnectRegister    = {
-        .mDataPin = PISO_DATA_PIN,
-        .mLatchPin = PISO_LATCH_PIN,
-        .mClockPin = PISO_CLOCK_PIN,
-        .mType = PISO_SHIFT_REGISTER,
-        .mNumBits = 8
-    }
 };
 
 // I2C bus controller
@@ -33,7 +26,6 @@ Sensor sensorsList[NUM_SENSORS] = {
                 .mSonarSensor = {
                     .mTXPin = SONAR_SENSOR_TX_L1,
                     .mRXPin = SONAR_SENSOR_RX_L1,
-                    .mJackDetectPin = SONAR_SENSOR_L1_JACK_DETECT_PIN,
                     .mBaudrate = SONAR_SENSOR_BAUDRATE,
                     .mStateMachineID = 0,
                     .mPIOWrapper = &PIO_WRAPPER
@@ -41,7 +33,8 @@ Sensor sensorsList[NUM_SENSORS] = {
             },
             .mSensorType = SONAR_SENSOR,
             .mSensorID = SONAR_SENSOR_L1_ID,
-            .mSensorConnectLEDPosition = SONAR_SENSOR_L1_ACTIVE_LED
+            .mSensorConnectLEDPosition = SONAR_SENSOR_L1_ACTIVE_LED,
+            .mHardwareConnectionID = FEED_SENSOR_L1_CONNECT_ID
         }
     },
     {
@@ -50,7 +43,6 @@ Sensor sensorsList[NUM_SENSORS] = {
                 .mSonarSensor = {
                     .mTXPin = SONAR_SENSOR_TX_R1,
                     .mRXPin = SONAR_SENSOR_RX_R1,
-                    .mJackDetectPin = SONAR_SENSOR_R1_JACK_DETECT_PIN,
                     .mBaudrate = SONAR_SENSOR_BAUDRATE,
                     .mStateMachineID = 1,
                     .mPIOWrapper = &PIO_WRAPPER
@@ -58,7 +50,8 @@ Sensor sensorsList[NUM_SENSORS] = {
             },
             .mSensorType = SONAR_SENSOR,
             .mSensorID = SONAR_SENSOR_R1_ID,
-            .mSensorConnectLEDPosition = SONAR_SENSOR_R1_ACTIVE_LED
+            .mSensorConnectLEDPosition = SONAR_SENSOR_R1_ACTIVE_LED,
+            .mHardwareConnectionID = FEED_SENSOR_R1_CONNECT_ID
         }
     },
     {
@@ -73,7 +66,8 @@ Sensor sensorsList[NUM_SENSORS] = {
             },
             .mSensorType = SENSOR_POD,
             .mSensorID = SENSOR_POD_L_ID,
-            .mSensorConnectLEDPosition = SENSOR_POD_L_ACTIVE_LED
+            .mSensorConnectLEDPosition = SENSOR_POD_L_ACTIVE_LED,
+            .mHardwareConnectionID = I2C_DEVICE_0_CONNECT_ID
         }
     },
     {
@@ -88,7 +82,8 @@ Sensor sensorsList[NUM_SENSORS] = {
             },
             .mSensorType = SENSOR_POD,
             .mSensorID = SENSOR_POD_R_ID,
-            .mSensorConnectLEDPosition = SENSOR_POD_R_ACTIVE_LED
+            .mSensorConnectLEDPosition = SENSOR_POD_R_ACTIVE_LED,
+            .mHardwareConnectionID = I2C_DEVICE_7_CONNECT_ID
         }
     },
     {
@@ -101,7 +96,8 @@ Sensor sensorsList[NUM_SENSORS] = {
             },
             .mSensorType = BATTERY_SENSOR,
             .mSensorID = RTC_BATTERY_SENSOR,
-            .mSensorConnectLEDPosition = NO_LED
+            .mSensorConnectLEDPosition = NO_LED,
+            .mHardwareConnectionID = ALWAYS_CONNECTED_CONNECT_ID
         }
     }
 };

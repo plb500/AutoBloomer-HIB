@@ -25,7 +25,6 @@ typedef enum {
 typedef struct {
     int8_t mMultiplexerAddress;                 // I2C Address pf the multiplexer device
     int8_t mResetPin;                           // For resetting the TCA9548A chip
-    ShiftRegister mChannelConnectRegister;      // For detecting which I2C channels are physically connected
 } I2CMultiplexer;
 
 
@@ -57,10 +56,8 @@ void shutdown_sensor_bus(I2CInterface *i2cInterface);
 void reset_sensor_bus(I2CInterface *i2cInterface, bool fullReset);
 I2CResponse check_i2c_address(I2CInterface *i2cInterface, const uint8_t address);
 I2CResponse select_i2c_channel(I2CInterface *i2cInterface, I2CChannel channel);
-bool is_i2c_channel_connected(I2CInterface *i2cInterface, I2CChannel channel);
 void reset_interface_watchdog(I2CInterface *i2cInterface);
 void check_interface_watchdog(I2CInterface *i2cInterface);
-void update_i2c_connection_status(I2CInterface *i2cInterface);
 I2CResponse write_i2c_data(
     I2CInterface *i2cInterface, 
     const uint8_t address, 

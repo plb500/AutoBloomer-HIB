@@ -5,34 +5,29 @@
 
 #include "debug_io.h"
 
-void initialize_sensor_jack_detect_pin(uint8_t pin);
-bool is_sensor_connected(Sensor *sensor);
+bool is_sensor_connected(Sensor *sensor, ConnectedHardwareMonitor *monitor);
 bool initialize_sensor_hardware(Sensor *sensor);
 void initialize_sensor_data(Sensor *sensor);
-void debug_sensors(Sensor *sensors, uint8_t numSensors);
+void debug_sensors(Sensor *sensors, uint8_t numSensors, ConnectedHardwareMonitor *monitor);
 I2CInterface* get_sensor_i2c(Sensor *sensor);
 
 
-void initialize_sensor_jack_detect_pin(uint8_t pin) {
-    gpio_init(pin);
-    gpio_set_dir(pin, GPIO_IN);
-    gpio_pull_up(pin);
-}
+bool is_sensor_connected(Sensor *sensor, ConnectedHardwareMonitor *monitor) {
+    if(!sensor || !monitor) {
+        return false;
+    }
 
-bool is_sensor_connected(Sensor *sensor) {
     bool connected = false;
 
-    switch(sensor->mSensorDefinition.mSensorType) {
-        case SONAR_SENSOR:
-            connected = !gpio_get(sensor->mSensorDefinition.mSensor.mSonarSensor.mJackDetectPin);
-            break;
-        
-        case SENSOR_POD:
-            connected = is_sensor_pod_connected(&sensor->mSensorDefinition.mSensor.mSensorPod);
-            break;
-
-        case BATTERY_SENSOR:
+    switch(sensor->mSensorDefinition.mHardwareConnectionID) {
+        case ALWAYS_CONNECTED_CONNECT_ID:
             connected = true;
+            break;
+        case NEVER_CONNECTED_CONNECT_ID:
+            connected = false;
+            break;
+        default:
+            connected = is_hardware_connected(monitor, sensor->mSensorDefinition.mHardwareConnectionID);
             break;
     }
 
@@ -45,23 +40,20 @@ bool initialize_sensor_hardware(Sensor *sensor) {
     initialize_sensor_data(sensor);
 
     // Initialize underlying sensor hardware
-    if(is_sensor_connected(sensor)) {
-        switch(sensor->mSensorDefinition.mSensorType) {
-            case SONAR_SENSOR:
-                initialize_sensor_jack_detect_pin(sensor->mSensorDefinition.mSensor.mSonarSensor.mJackDetectPin);
-                initialize_sonar_sensor(&sensor->mSensorDefinition.mSensor.mSonarSensor);
-                initialized = true;
-                break;
-            
-            case SENSOR_POD:
-                initialized = initialize_sensor_pod(&sensor->mSensorDefinition.mSensor.mSensorPod);
-                break;
+    switch(sensor->mSensorDefinition.mSensorType) {
+        case SONAR_SENSOR:
+            initialize_sonar_sensor(&sensor->mSensorDefinition.mSensor.mSonarSensor);
+            initialized = true;
+            break;
+        
+        case SENSOR_POD:
+            initialized = initialize_sensor_pod(&sensor->mSensorDefinition.mSensor.mSensorPod);
+            break;
 
-            case BATTERY_SENSOR:
-                initialize_battery_sensor(&sensor->mSensorDefinition.mSensor.mBatterySensor);
-                initialized = true;
-                break;
-        }
+        case BATTERY_SENSOR:
+            initialize_battery_sensor(&sensor->mSensorDefinition.mSensor.mBatterySensor);
+            initialized = true;
+            break;
     }
 
     return initialized;
@@ -74,7 +66,7 @@ void initialize_sensor_data(Sensor *sensor) {
 
     sensor->mCurrentSensorData.mSensorStatus = SENSOR_DISCONNECTED;
 }
-void debug_sensors(Sensor *sensors, uint8_t numSensors) {
+void debug_sensors(Sensor *sensors, uint8_t numSensors, ConnectedHardwareMonitor *monitor) {
     DEBUG_PRINT("Sensor Values\n");
     DEBUG_PRINT("-------------\n");
 
@@ -84,7 +76,7 @@ void debug_sensors(Sensor *sensors, uint8_t numSensors) {
 
         DEBUG_PRINT("  * Sensor %d (type: %d)\n", i, sensor->mSensorDefinition.mSensorType);
 
-        if(is_sensor_connected(sensor)) {
+        if(is_sensor_connected(sensor, monitor)) {
             DEBUG_PRINT("    - CONNECTED -- ");
 
             switch(sensor->mSensorDefinition.mSensorType) {
@@ -140,7 +132,7 @@ I2CInterface* get_sensor_i2c(Sensor *sensor) {
 }
 
 
-void update_sensors(Sensor *sensors, uint8_t numSensors, bool debugOutput) {
+void update_sensors(Sensor *sensors, uint8_t numSensors, bool debugOutput, ConnectedHardwareMonitor *monitor) {
     float val;
 
     DEBUG_PRINT("Sensor update:\n");
@@ -157,7 +149,7 @@ void update_sensors(Sensor *sensors, uint8_t numSensors, bool debugOutput) {
         memset(sensorData, 0, sizeof(SensorData));
 
         // Check connection
-        if(is_sensor_connected(sensor)) {
+        if(is_sensor_connected(sensor, monitor)) {
             DEBUG_PRINT("    +- Connected\n");
 
             // If the sensor has just been connected, initialize its hardware
@@ -212,6 +204,6 @@ void update_sensors(Sensor *sensors, uint8_t numSensors, bool debugOutput) {
     DEBUG_PRINT("--------------------------------\n\n");
 
     if(debugOutput) {
-        debug_sensors(sensors, numSensors);
+        debug_sensors(sensors, numSensors, monitor);
     }
 }
