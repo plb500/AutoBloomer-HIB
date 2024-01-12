@@ -36,9 +36,9 @@ ControllerInterface _sensorControllerInterface = {
 
 // Connection LED controller
 ShiftRegister _ledShifter = {
-    .mDataPin = SIPO_DATA_PIN,
-    .mLatchPin = SIPO_LATCH_PIN,
-    .mClockPin = SIPO_CLOCK_PIN,
+    .mDataPin = LED_SR_DATA_PIN,
+    .mLatchPin = LED_SR_LATCH_PIN,
+    .mClockPin = LED_SR_CLOCK_PIN,
     .mType = SIPO_SHIFT_REGISTER,
     .mNumBits = 8
 };
@@ -103,7 +103,7 @@ int main() {
     DEBUG_PRINT("Sensor data queue ready\n");
 
     // Initialise UART controller comms interface
-    init_sensor_controller(&_sensorControllerInterface, SENSOR_CONTROLLER_TX, SENSOR_CONTROLLER_RX, SENSOR_CONTROLLER_BAUDRATE);
+    init_sensor_controller(&_sensorControllerInterface, SENSOR_CONTROLLER_TX_PIN, SENSOR_CONTROLLER_RX_PIN, SENSOR_CONTROLLER_BAUDRATE);
 
     DEBUG_PRINT("Sensor controller ready, launching controller core\n");
 

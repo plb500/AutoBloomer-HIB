@@ -13,8 +13,8 @@ static char DEBUG_PRINT_BUF[DEBUG_PRINT_BUF_SIZE];
 
 // Initialize the debug logging system
 #   define DEBUG_PRINT_INIT()                              { \
-        gpio_set_function(UART_TX, GPIO_FUNC_UART); \
-        gpio_set_function(UART_RX, GPIO_FUNC_UART); \
+        gpio_set_function(DEBUG_UART_TX_PIN, GPIO_FUNC_UART); \
+        gpio_set_function(DEBUG_UART_RX_PIN, GPIO_FUNC_UART); \
         uart_init(STDIO_UART, STDIO_UART_BAUDRATE); \
         uart_set_format (STDIO_UART, 8, 1, UART_PARITY_NONE); \
         uart_set_hw_flow(STDIO_UART, false, false); \

@@ -2,15 +2,15 @@
 
 I2CMultiplexer sensorI2CMultiplexer = {
     .mMultiplexerAddress        = DEFAULT_MULTIPLEXER_ADDRESS,
-    .mResetPin                  = SENSOR_I2C_MULTIPLEXER_RESET,
+    .mResetPin                  = SENSOR_I2C_MULTIPLEXER_RESET_PIN,
 };
 
 // I2C bus controller
 I2CInterface sensorI2CInterface = {
     .mI2C = SENSOR_I2C,
     .mBaud = SENSOR_I2C_BAUDRATE,
-    .mSDA = SENSOR_I2C_SDA,
-    .mSCL = SENSOR_I2C_SCL,
+    .mSDA = SENSOR_I2C_SDA_PIN,
+    .mSCL = SENSOR_I2C_SCL_PIN,
     .mMultiplexer = &sensorI2CMultiplexer
 };
 
@@ -24,8 +24,8 @@ Sensor sensorsList[NUM_SENSORS] = {
         .mSensorDefinition = {                               
             .mSensor = {
                 .mSonarSensor = {
-                    .mTXPin = SONAR_SENSOR_TX_L1,
-                    .mRXPin = SONAR_SENSOR_RX_L1,
+                    .mTXPin = SONAR_SENSOR_L1_TX_PIN,
+                    .mRXPin = SONAR_SENSOR_L1_RX_PIN,
                     .mBaudrate = SONAR_SENSOR_BAUDRATE,
                     .mStateMachineID = 0,
                     .mPIOWrapper = &PIO_WRAPPER
@@ -41,8 +41,8 @@ Sensor sensorsList[NUM_SENSORS] = {
         .mSensorDefinition = {                               
             .mSensor = {
                 .mSonarSensor = {
-                    .mTXPin = SONAR_SENSOR_TX_R1,
-                    .mRXPin = SONAR_SENSOR_RX_R1,
+                    .mTXPin = SONAR_SENSOR_R1_TX_PIN,
+                    .mRXPin = SONAR_SENSOR_R1_RX_PIN,
                     .mBaudrate = SONAR_SENSOR_BAUDRATE,
                     .mStateMachineID = 1,
                     .mPIOWrapper = &PIO_WRAPPER
