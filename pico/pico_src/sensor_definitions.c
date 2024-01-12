@@ -90,7 +90,8 @@ Sensor sensorsList[NUM_SENSORS] = {
         .mSensorDefinition = {                               
             .mSensor = {
                 .mBatterySensor = {
-                    .mBatterySensePin = RTC_BATTERY_SENSE_PIN,
+                    .mEnableSensePin = BATTERY_SENSE_ENABLE_PIN,
+                    .mBatteryMeasurePin = BATTERY_SENSE_PIN,
                     .mADCInput = RTC_BATTERY_ADC_PORT
                 }
             },

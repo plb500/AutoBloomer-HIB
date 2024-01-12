@@ -190,7 +190,7 @@ void update_sensors(Sensor *sensors, uint8_t numSensors, bool debugOutput, Conne
 
                 case BATTERY_SENSOR:
                     DEBUG_PRINT("    +- Battery sensor update running...\n");
-                    update_battery_level(&sensor->mSensorDefinition.mSensor.mBatterySensor);
+                    battery_sensor_update(&sensor->mSensorDefinition.mSensor.mBatterySensor);
                     sensorData->mSensorStatus = SENSOR_CONNECTED_VALID_DATA;
                     sensorData->mSensorReading.mBatteryVoltage = sensor->mSensorDefinition.mSensor.mBatterySensor.mCurrentVoltage;
             }

@@ -42,8 +42,8 @@ typedef struct {
     SensorHardware          mSensor;
     SensorType              mSensorType;
     uint8_t                 mSensorID;
-    uint8_t                 mSensorConnectLEDPosition;
-    uint8_t                 mHardwareConnectionID;
+    int8_t                  mSensorConnectLEDPosition;
+    int8_t                  mHardwareConnectionID;
 } SensorDefinition;
 
 typedef struct {
