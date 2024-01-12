@@ -18,4 +18,4 @@ build/
 \#auto_saved_files\#
 hardware/sensor_board/export/
 
-pico/wifi_props/
+pico/wifi_props/**
