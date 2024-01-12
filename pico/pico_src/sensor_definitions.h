@@ -3,7 +3,6 @@
 
 #include "hardware_definitions.h"
 #include "hardware/sensors/sensor.h"
-#include "uart_controller/sensor_msgpack.h"
 
 // Sensor IDs/array positions
 typedef enum {
@@ -21,8 +20,5 @@ extern I2CInterface sensorI2CInterface;
 
 // Our list of actual sensor hardware - used on core0 only
 extern Sensor sensorsList[NUM_SENSORS];
-
-// Data transmission wrappers for connected hardware - used on core1 only
-extern MsgPackSensorPacket sensorPackets[NUM_SENSORS];
 
 #endif      // SENSOR_DEFINITIONS_H

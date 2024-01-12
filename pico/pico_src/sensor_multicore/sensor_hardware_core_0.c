@@ -3,13 +3,11 @@
 #include <string.h>
 
 #include "hardware/watchdog.h"
-#include "hardware/flash.h"
 #include "hardware/shift_register.h"
 #include "hardware/sensors/sensor_i2c_interface.h"
 #include "hardware/connected_hardware_monitor.h"
 
-#include "uart_controller/uart_sensor_controller.h"
-#include "sensor_uart_control_core_1.h"
+#include "sensor_mqtt_client_core_1.h"
 #include "sensor_multicore/sensor_multicore_utils.h"
 #include "sensor_definitions.h"
 #include "debug_io.h"
@@ -24,15 +22,6 @@ const bool DEBUG_SENSOR_UPDATE = false;
 
 // Queue used for sending sensor updates from core0 to core1
 queue_t sensorUpdateQueue;
-
-// Controller interface for comms running on core 1
-ControllerInterface _sensorControllerInterface = {
-    .mUART = SENSOR_CONTROLLER_UART,
-    .mMsgPackSensors = sensorPackets,
-    .mNumMsgPackSensors = NUM_SENSORS,
-    .mSensorUpdateQueue = &sensorUpdateQueue,
-    .mSerialLEDPin = ONBOARD_LED_PIN
-};
 
 // Connection LED controller
 ShiftRegister _ledShifter = {
@@ -56,7 +45,7 @@ ConnectedHardwareMonitor _connectedHardwareMonitor = {
 
 void update_sensor_status_indicators(ShiftRegister *shiftRegister, Sensor* sensors, uint8_t numSensors) {
     for(int i = 0; i < numSensors; ++i) {
-        if(sensors[i].mSensorDefinition.mSensorConnectLEDPosition != NO_LED) {
+        if(sensors[i].mSensorDefinition.mSensorConnectLEDPosition != NO_LED) {  
             bool ledOn = (sensors[i].mCurrentSensorData.mSensorStatus == SENSOR_CONNECTED_VALID_DATA);
             set_shift_register_state(shiftRegister, sensors[i].mSensorDefinition.mSensorConnectLEDPosition, ledOn);
         }
@@ -102,13 +91,8 @@ int main() {
 
     DEBUG_PRINT("Sensor data queue ready\n");
 
-    // Initialise UART controller comms interface
-    init_sensor_controller(&_sensorControllerInterface, SENSOR_CONTROLLER_TX_PIN, SENSOR_CONTROLLER_RX_PIN, SENSOR_CONTROLLER_BAUDRATE);
-
-    DEBUG_PRINT("Sensor controller ready, launching controller core\n");
-
     // Launch secondary core (core 1)
-    multicore_launch_core1(sensor_controller_core_main);
+    multicore_launch_core1(sensor_mqtt_client_core_main);
 
     // Activate status indicator
     gpio_put(ONBOARD_LED_PIN, true);

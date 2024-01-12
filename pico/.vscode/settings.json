@@ -33,7 +33,9 @@
     "i2c.h": "c",
     "sensor_definitions.h": "c",
     "shift_register.h": "c",
-    "sensor.h": "c"
+    "sensor.h": "c",
+    "sensor_multicore_utils.h": "c",
+    "dns.h": "c"
 },
 "cortex-debug.variableUseNaturalFormat": true,
 "C_Cpp.errorSquiggles": "Disabled"

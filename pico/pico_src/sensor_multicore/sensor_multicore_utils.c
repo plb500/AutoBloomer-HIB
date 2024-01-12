@@ -1,8 +1,20 @@
 #include "sensor_multicore_utils.h"
 
 
+const char * const AUTOBLOOMER_TOPIC_NAME           = "AutoBloomer";
+const char * const SENSOR_STATUS_VALUE_STRINGS[]    = {
+    "Disconnected",
+    "Malfunctioning",
+    "Connected, no data",
+    "Connected, data ready"
+};
+
+
 typedef struct {
     uint8_t                 mSensorID;
+    SensorType              mSensorType;
+    const char *            mSensorName;
+    const char *            mSensorLocation;
     SensorData              mSensorData;
 } SensorDataUpdate;
 
@@ -17,33 +29,52 @@ void sensor_to_data_update(Sensor *sensor, SensorDataUpdate *dataUpdate) {
     }
 
     dataUpdate->mSensorID = sensor->mSensorDefinition.mSensorID;
+    dataUpdate->mSensorType = sensor->mSensorDefinition.mSensorType;
+    dataUpdate->mSensorName = sensor->mSensorDefinition.mSensorName;
+    dataUpdate->mSensorLocation = sensor->mSensorDefinition.mSensorLocation;
     dataUpdate->mSensorData = sensor->mCurrentSensorData;
 }
 
-void data_update_entry_to_sensor_packet(SensorDataUpdate *dataUpdate, MsgPackSensorPacket *sensorPacket) {
+void data_update_to_mqtt_messages(SensorDataUpdate *dataUpdate, MQTTMessage *mqttMsg) {
     // Sanity check
-    if(!dataUpdate || !sensorPacket || (dataUpdate->mSensorID != sensorPacket->mSensorID)) {
+    if(!dataUpdate || !mqttMsg) {
         return;
     }
 
-    // First, set the status
-    sensorPacket->mCurrentSensorData.mStatus = dataUpdate->mSensorData.mSensorStatus;
+    const char *sensorName = dataUpdate->mSensorName;
+    const char *sensorLocation = dataUpdate->mSensorLocation;
+    const char *sensorStatus = SENSOR_STATUS_VALUE_STRINGS[dataUpdate->mSensorData.mSensorStatus];
 
-    // Next set the actual readings
-    switch(sensorPacket->mSensorType) {
+    snprintf(mqttMsg->mTopic, MQTT_MAX_TOPIC_LENGTH, "%s/%s/%s",
+        AUTOBLOOMER_TOPIC_NAME,
+        sensorLocation,
+        sensorName
+    );
+    
+    switch(dataUpdate->mSensorType) {
         case SONAR_SENSOR:
-            sensorPacket->mCurrentSensorData.mSensorReadings[SONAR_SENSOR_READING_INDEX].mValue.mIntValue = dataUpdate->mSensorData.mSensorReading.mSonarSensorDistance;
+            snprintf(mqttMsg->mPayload, MQTT_MAX_PAYLOAD_LENGTH, "{\"status\":\"%s\", \"Feed level\":\"%d\"}",
+                sensorStatus,
+                dataUpdate->mSensorData.mSensorReading.mSonarSensorDistance   
+            );
             break;
         
         case SENSOR_POD:
-            sensorPacket->mCurrentSensorData.mSensorReadings[SENSOR_POD_CO2_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mSensorPodData.mCO2Level;
-            sensorPacket->mCurrentSensorData.mSensorReadings[SENSOR_POD_TEMPERATURE_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mSensorPodData.mTemperature;
-            sensorPacket->mCurrentSensorData.mSensorReadings[SENSOR_POD_RH_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mSensorPodData.mHumidity;
-            sensorPacket->mCurrentSensorData.mSensorReadings[SENSOR_POD_SOIL_MOISTURE_READING_INDEX].mValue.mIntValue = dataUpdate->mSensorData.mSensorReading.mSensorPodData.mSoilSensorData;
+            snprintf(mqttMsg->mPayload, MQTT_MAX_PAYLOAD_LENGTH, 
+                "{\"status\":\"%s\", \"CO2 level\":\"%.2fppm\", \"Temperature\":\"%.2fC\", \"RH\":\"%.2f%%\", \"Soil moisture\":\"%d\"}",
+                sensorStatus,
+                dataUpdate->mSensorData.mSensorReading.mSensorPodData.mCO2Level,
+                dataUpdate->mSensorData.mSensorReading.mSensorPodData.mTemperature,
+                dataUpdate->mSensorData.mSensorReading.mSensorPodData.mHumidity,
+                dataUpdate->mSensorData.mSensorReading.mSensorPodData.mSoilSensorData
+            );
             break;
 
         case BATTERY_SENSOR:
-            sensorPacket->mCurrentSensorData.mSensorReadings[BATTERY_LEVEL_READING_INDEX].mValue.mFloatValue = dataUpdate->mSensorData.mSensorReading.mBatteryVoltage;
+            snprintf(mqttMsg->mPayload, MQTT_MAX_PAYLOAD_LENGTH, "{\"status\":\"%s\", \"Battery level\":\"%.2fv\"}",
+                sensorStatus,
+                dataUpdate->mSensorData.mSensorReading.mBatteryVoltage
+            );
             break;
     }
 }
@@ -57,18 +88,6 @@ void sensor_data_to_update_message(Sensor *sensors, SensorDataUpdateMessage *upd
         sensor_to_data_update(&sensors[i], &updateMessage->mSensorUpdates[i]); 
     }
 }
-
-void update_message_to_sensor_packet(SensorDataUpdateMessage *updateMessage, MsgPackSensorPacket *sensorPacket) {
-    // Sanity check
-    if(!updateMessage || !sensorPacket) {
-        return;
-    }
-
-    for(int i = 0; i < NUM_SENSORS; ++i) {
-        data_update_entry_to_sensor_packet(&updateMessage->mSensorUpdates[i], &sensorPacket[i]);
-    }
-}
-
 
         // PUBLIC FUNCTIONS //
 
@@ -96,22 +115,29 @@ void push_sensor_data_to_queue(queue_t *sensorDataQueue, Sensor *sensors) {
     } while(!added);
 }
 
-void consume_update_queue_messages(queue_t *sensorUpdateQueue, MsgPackSensorPacket *sensorPackets) {
-    SensorDataUpdateMessage msgHolder;
+void transmit_update_queue_data(MQTTState *mqttState) {
+    SensorDataUpdateMessage updateMsg;
     bool msgRead = false;
     bool haveMessage = false;
+    MQTTMessage mqttMsg;
 
     // Since updates are sent sequentially from core 0, we are really only interested in the latest update data and
     // can discard any old messages since they contain stale sensor data. So we will just spin through the queue until
     // there are no new messages
     do {
-        msgRead = queue_try_remove(sensorUpdateQueue, &msgHolder);
+        msgRead = queue_try_remove(mqttState->mSensorUpdateQueue, &updateMsg);
         if(msgRead) {
             haveMessage = true;
         }
     } while(msgRead);
 
-    if(haveMessage) {
-        update_message_to_sensor_packet(&msgHolder, sensorPackets);
+    for(int i = 0; i < NUM_SENSORS; ++i) {
+        data_update_to_mqtt_messages(
+            &updateMsg.mSensorUpdates[i],
+            &mqttMsg
+        );
+
+        publish_mqtt_data(mqttState, mqttMsg.mTopic, mqttMsg.mPayload);
     }
 }
+
