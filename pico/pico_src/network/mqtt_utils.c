@@ -31,12 +31,12 @@ static void mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection
     monitor->mConnectionCompleted = true;
 }
 
-void connect_to_broker_blocking(MQTTState *mqttState) {
+bool connect_to_broker_blocking(MQTTState *mqttState) {
     struct mqtt_connect_client_info_t ci;
     err_t err;
 
     if(!mqttState) {
-        return;
+        return false;
     }
 
     memset(&ci, 0, sizeof(ci));
@@ -52,11 +52,15 @@ void connect_to_broker_blocking(MQTTState *mqttState) {
     ConnectionMonitor connectionMonitor;
     connectionMonitor.mConnectionCompleted = false;
 
+    cyw43_arch_lwip_begin();
     mqtt_client_connect(mqttState->mqttClient, &mqttState->mBrokerAddress, mqttState->mBrokerPort, mqtt_connection_cb, &connectionMonitor, &ci);
+    cyw43_arch_lwip_end();
 
     while(!connectionMonitor.mConnectionCompleted) {
         sleep_ms(1);
     }
+
+    return connectionMonitor.mStatus == MQTT_CONNECT_ACCEPTED;
 }
 
 void disconnect_from_broker(MQTTState *mqttState) {
@@ -65,7 +69,9 @@ void disconnect_from_broker(MQTTState *mqttState) {
     }
 
     if(mqtt_client_is_connected(mqttState->mqttClient)) {
+        cyw43_arch_lwip_begin();
         mqtt_disconnect(mqttState->mqttClient);
+        cyw43_arch_lwip_end();
     }
 }
 
@@ -76,7 +82,9 @@ err_t publish_mqtt_data(MQTTState *mqttState, const char *topic, const char *pay
     u8_t qos = 0;
     u8_t retain = 0;
   
+    cyw43_arch_lwip_begin();
     err = mqtt_publish(mqttState->mqttClient, topic, payload, strlen(payload), qos, retain, mqtt_pub_request_cb, mqttState);
+    cyw43_arch_lwip_end();
 
     if(err != ERR_OK) {
         DEBUG_PRINT("Publish err: %d\n", err);

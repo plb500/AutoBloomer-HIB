@@ -17,7 +17,6 @@
 #include "pico/util/queue.h"
 
 
-const uint8_t ONBOARD_LED_PIN = 25;
 const bool DEBUG_SENSOR_UPDATE = false;
 
 // Queue used for sending sensor updates from core0 to core1
@@ -68,13 +67,6 @@ int main() {
     // second arg is pause on debug which means the watchdog will pause when stepping through code
     watchdog_enable(5000, 1);
 
-    // Initialize onboard LED
-    gpio_init(ONBOARD_LED_PIN);
-    gpio_set_dir(ONBOARD_LED_PIN, GPIO_OUT);
-    gpio_put(ONBOARD_LED_PIN, false);
-
-    DEBUG_PRINT("LEDs initialized\n");
-
     // Initialize the I2C interface
     init_sensor_bus(&sensorI2CInterface);
 
@@ -94,9 +86,6 @@ int main() {
     // Launch secondary core (core 1)
     multicore_launch_core1(sensor_mqtt_client_core_main);
 
-    // Activate status indicator
-    gpio_put(ONBOARD_LED_PIN, true);
-
     // core0 execution loop
     DEBUG_PRINT("Sensor initialization complete\n");
     while(1) {
@@ -104,9 +93,7 @@ int main() {
 
         // Update sensor readings
         DEBUG_PRINT("Update sensors\n");
-        gpio_put(ONBOARD_LED_PIN, false);
         update_sensors(sensorsList, NUM_SENSORS, DEBUG_SENSOR_UPDATE, &_connectedHardwareMonitor);
-        gpio_put(ONBOARD_LED_PIN, true);
 
         // Update sensor LED indicators
         DEBUG_PRINT("Update LEDs\n");

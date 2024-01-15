@@ -56,9 +56,9 @@ void data_update_to_mqtt_messages(SensorDataUpdate *dataUpdate, MQTTMessage *mqt
     
     switch(dataUpdate->mSensorType) {
         case SONAR_SENSOR:
-            snprintf(mqttMsg->mPayload, MQTT_MAX_PAYLOAD_LENGTH, "{%s, \"Feed level\":%d}",
+            snprintf(mqttMsg->mPayload, MQTT_MAX_PAYLOAD_LENGTH, "{%s, \"%s\":%d}",
                 statusString,
-                dataUpdate->mSensorData.mSensorReading.mSonarSensorDistance   
+                FEED_LEVEL_JSON_KEY, dataUpdate->mSensorData.mSensorReading.mSonarSensorDistance   
             );
             break;
         

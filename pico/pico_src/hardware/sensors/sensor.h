@@ -43,6 +43,7 @@ typedef struct {
     SensorType              mSensorType;
     uint8_t                 mSensorID;
     const char * const      mSensorName;
+    const char * const      mSensorDisplayName;
     const char * const      mSensorLocation;
     int8_t                  mSensorConnectLEDPosition;
     int8_t                  mHardwareConnectionID;

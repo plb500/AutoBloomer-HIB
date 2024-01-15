@@ -18,5 +18,7 @@ bool is_network_connected();
 void resolve_host_blocking(DNSResolutionRequest *request);
 int connect_to_wifi(const char * const ssid, const char * const password, const char * const hostname);
 
+void wifi_led_on();
+void wifi_led_off();
 
 #endif      // _NETWORK_UTILS_H_

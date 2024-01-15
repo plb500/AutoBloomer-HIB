@@ -70,27 +70,19 @@ int init_wifi(
         netif_set_hostname(netif_default, hostname);
     }
 
-    if (cyw43_arch_wifi_connect_async(ssid, password, authType)) {
-        return 2;
-    }
-
-    int status = CYW43_LINK_UP + 1;
-    while(status >= 0 && status != CYW43_LINK_UP) {
-        int new_status = cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_STA);
-        if(new_status != status){
-            status = new_status;
-        }
-        sleep_ms(20);
-    }
-
-    DEBUG_PRINT("Exiting with status %d\n", status);
-
-    return status;
+    return cyw43_arch_wifi_connect_timeout_ms(ssid, password, authType,10000);
 }
 
 int connect_to_wifi(const char * const ssid, const char * const password, const char * const hostname) {
     uint32_t country = CYW43_COUNTRY_CANADA;
     uint32_t auth = CYW43_AUTH_WPA2_MIXED_PSK;
-
     return init_wifi(country, ssid, password, auth, hostname);
+}
+
+void wifi_led_on() {
+    cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
+}
+
+void wifi_led_off() {
+    cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 }

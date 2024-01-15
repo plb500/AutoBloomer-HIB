@@ -24,7 +24,7 @@ typedef struct MQTTMessage_t {
 
 
 void init_mqtt_state(MQTTState *mqttState);
-void connect_to_broker_blocking(MQTTState *mqttState);
+bool connect_to_broker_blocking(MQTTState *mqttState);
 void disconnect_from_broker(MQTTState *mqttState);
 
 void init_mqtt_message(MQTTMessage *message);
